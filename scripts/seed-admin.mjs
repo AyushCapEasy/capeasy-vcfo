@@ -9,7 +9,14 @@
 //   node scripts/seed-admin.mjs                 # defaults to ayush@capeasy.in
 //   node scripts/seed-admin.mjs other@email     # override the admin email
 import { randomBytes } from 'node:crypto';
+import { writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 import { loadEnv, REF } from './_env.mjs';
+
+// The bootstrap credential is written ONLY to this gitignored local file — never to stdout,
+// so it can never leak into a terminal transcript, log, or commit.
+const CRED_PATH = resolve(dirname(fileURLToPath(import.meta.url)), '..', '.admin-credentials.local');
 
 const env = loadEnv();
 const EXPECTED_URL = 'https://' + REF + '.supabase.co';
@@ -82,7 +89,16 @@ try {
   await client.end();
 }
 
-console.log('\n  FIRST-ADMIN READY — log in at /login, then change this password:');
+// Write the credential to the gitignored local file ONLY (never stdout). 0o600 where supported.
+writeFileSync(
+  CRED_PATH,
+  `# vCFO admin bootstrap credential — LOCAL ONLY, gitignored. Rotate after first login.\n` +
+    `# Re-run \`npm run db:seed-admin\` any time to reset (overwrites this file).\n` +
+    `ADMIN_EMAIL=${email}\n` +
+    `ADMIN_TEMP_PASSWORD=${tempPassword}\n`,
+  { mode: 0o600 }
+);
+console.log('\n  FIRST-ADMIN READY (admin-provisioned, no public signup).');
 console.log('    email    : ' + email);
-console.log('    password : ' + tempPassword);
-console.log('  (Temp credential — shown once. Not stored anywhere; re-run this script to reset.)');
+console.log('    password : written to .admin-credentials.local (gitignored) — open it locally.');
+console.log('  The previous credential is now invalid. Rotate again any time by re-running this script.');
