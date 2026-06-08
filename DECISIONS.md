@@ -42,6 +42,17 @@
   metrics (cash flow, burn, MoM) exercisable. They are **NOT** the CA-checked golden fixture (Bible §10.6),
   which remains an external `[INPUT REQUIRED]` and will be emitted UNVERIFIED at M5.
 - **Reversible?** Yes — seed-only; rerun `npm run db:seed` (idempotent, wipes + re-inserts the demo org).
+- **Forward guard (verified 2026-06-08, for M5):** because the seed's `cash` is the balancing
+  residual, the demo books balance *by construction*. That does NOT make the §4.5 "CF closing cash =
+  BS closing cash" invariant circular — the plug lives in the **seed (data generator)** only; there is
+  no residual/plug logic in any engine or shared module (the engine doesn't exist yet, and grep finds
+  "residual/balancing" only in the seed + these docs). Verified by a runnable harness against the live
+  DB: the BS side reads only the stored `cash_bank` line, the CF side reads only opening cash + NP +
+  Δ(non-cash accounts) and **never** the period's closing cash; they tie on real data, and overstating
+  one non-cash line by ₹10,000 broke the tie by exactly ₹10,000 (the invariant FAILED, proving it is
+  live). The engine at M5 MUST preserve this independence (BS cash from TB `cash_bank`, never from the
+  CF statement) and ship the perturbation test. The invariant checks **engine arithmetic**, not number
+  correctness — correctness stays the CA golden fixture (PENDING, Bible §10.6).
 
 ---
 
