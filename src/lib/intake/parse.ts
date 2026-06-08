@@ -1,12 +1,12 @@
 // src/lib/intake/parse.ts — parse an uploaded TB (CSV via Papaparse, XLSX via SheetJS) into a
-// fully-transparent preview. Tolerances (header synonyms, sign/(x) normalization, net-to-one-side,
-// Total-row skipping) are APPLIED but never hidden: the column mapping, every per-row adjustment,
-// and every skipped row are returned so the analyst can approve the read before it becomes intake
-// data (Bible §8.5 — no silent black-box transforms). Server-side only.
+// fully-transparent preview. Formatting tolerances (header synonyms, ₹/comma stripping, Total-row
+// skipping) are applied and shown. But a parenthesis/minus is NEVER acted on automatically: by
+// default a value is imported AS WRITTEN in its original column, and any debit↔credit move is a
+// PROPOSAL the analyst opts into (moving sides changes accounting meaning — Bible §8.5). Server-only.
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
-import { rupeesCellToPaise } from './money';
-import type { ParseResult, ParseError, ParsedTbRow, Adjustment, SkippedRow, ColumnMapping, ColumnOverride } from './types';
+import { parseAmountCell, paiseToInr } from './money';
+import type { ParseResult, ParseError, ParsedTbRow, SignProposal, SkippedRow, ColumnMapping, ParseOptions } from './types';
 import { COLUMN_ROLES, type ColumnRole } from './types';
 
 const HEADER_SYNONYMS: Record<ColumnRole, string[]> = {
@@ -63,23 +63,21 @@ function detectHeader(grid: string[][]) {
   return null;
 }
 
-// --- Grid (+ optional column override) → transparent preview ---------------
-export function parseGrid(grid: string[][], override?: ColumnOverride): ParseResult {
+// --- Grid (+ analyst options) → transparent preview ------------------------
+export function parseGrid(grid: string[][], options?: ParseOptions): ParseResult {
   if (!grid.length) return { ok: false, errors: [{ kind: 'empty_file', message: 'The file appears to be empty.' }] };
 
   const header = detectHeader(grid);
   if (!header) {
     const firstNonEmpty = grid.find((row) => row.some((c) => c.trim() !== '')) ?? [];
     const seen = firstNonEmpty.map((c) => c.trim()).filter(Boolean).slice(0, 12).join(' | ') || '(no readable header row)';
-    return {
-      ok: false,
-      errors: [{ kind: 'missing_columns', message: 'Could not find the required columns. Expected a header row containing: account_code, account_name, debit, credit.', detail: `Columns seen: ${seen}` }],
-    };
+    return { ok: false, errors: [{ kind: 'missing_columns', message: 'Could not find the required columns. Expected a header row containing: account_code, account_name, debit, credit.', detail: `Columns seen: ${seen}` }] };
   }
 
   const headerCells = (grid[header.rowIdx] ?? []).map(cell);
   const cols = { ...header.cols };
   const warnings: string[] = [];
+  const override = options?.override;
   if (override) {
     for (const role of COLUMN_ROLES) {
       const idx = override[role];
@@ -96,9 +94,10 @@ export function parseGrid(grid: string[][], override?: ColumnOverride): ParseRes
     credit: { header: headerCells[cols.credit] ?? '', index: cols.credit },
   };
 
+  const acceptedFlips = new Set(options?.acceptedFlips ?? []);
   const rows: ParsedTbRow[] = [];
   const errors: ParseError[] = [];
-  const adjustments: Adjustment[] = [];
+  const proposals: SignProposal[] = [];
   const skipped: SkippedRow[] = [];
 
   for (let r = header.rowIdx + 1; r < grid.length; r++) {
@@ -109,34 +108,55 @@ export function parseGrid(grid: string[][], override?: ColumnOverride): ParseRes
     const crS = cell(row[cols.credit]);
 
     if (!code && !name && !drS && !crS) continue; // truly empty
-    const totalRe = /^(grand\s+)?totals?$/i; // exact "Total"/"Totals"/"Grand Total" in code or name
+    const totalRe = /^(grand\s+)?totals?$/i;
     if (totalRe.test(code) || totalRe.test(name)) {
       skipped.push({ rowNumber: r + 1, reason: 'Total / sub-total row', text: row.map(cell).filter(Boolean).join(' | ') });
       continue;
     }
 
-    const dr = rupeesCellToPaise(drS);
-    const cr = rupeesCellToPaise(crS);
-    if (dr === null || cr === null) {
+    const d = parseAmountCell(drS);
+    const c = parseAmountCell(crS);
+    if (d === null || c === null) {
       errors.push({ kind: 'bad_amount', rowNumber: r + 1, message: `Row ${r + 1}: non-numeric amount in a debit/credit column.`, detail: `debit="${drS}", credit="${crS}"` });
       continue;
     }
     if (!code && !name) continue;
 
-    const net = dr - cr;
-    const resultDebit = Math.max(net, 0);
-    const resultCredit = Math.max(-net, 0);
+    const debitMag = d.magnitudePaise;
+    const creditMag = c.magnitudePaise;
+    // DEFAULT: as written — magnitudes stay in their original columns. No silent side-move.
+    let resultDebit = debitMag;
+    let resultCredit = creditMag;
 
-    const reasons: string[] = [];
-    const paren = /^\(.*\)$/.test(drS) || /^\(.*\)$/.test(crS);
-    const minus = drS.startsWith('-') || crS.startsWith('-');
-    if (paren) reasons.push('parentheses read as a negative');
-    else if (minus) reasons.push('leading minus read as a negative');
-    if (dr > 0 && cr > 0) reasons.push('debit and credit both present — netted to one side');
-    if (Math.abs(dr) > 0 && resultDebit === 0 && resultCredit > 0) reasons.push('moved from debit → credit');
-    if (Math.abs(cr) > 0 && resultCredit === 0 && resultDebit > 0) reasons.push('moved from credit → debit');
-    if (reasons.length) {
-      adjustments.push({ rowNumber: r + 1, account: name || code, originalDebit: drS || '0', originalCredit: crS || '0', resultDebitPaise: resultDebit, resultCreditPaise: resultCredit, reasons });
+    // CA-VALIDATE: parenthesis / leading-minus → "this belongs on the other side" is an ACCOUNTING
+    // rule, not a parsing rule. It is surfaced as an opt-in proposal and needs CA sign-off before
+    // any real client file (DECISIONS, OPEN — needs CA). Never auto-applied.
+    const negCell: ColumnRole | null = d.negative && debitMag > 0 ? 'debit' : c.negative && creditMag > 0 ? 'credit' : null;
+    if (negCell === 'debit' || negCell === 'credit') {
+      const accepted = acceptedFlips.has(r + 1);
+      const proposed =
+        negCell === 'credit'
+          ? { debitPaise: debitMag + creditMag, creditPaise: 0 }
+          : { debitPaise: 0, creditPaise: creditMag + debitMag };
+      const mag = negCell === 'credit' ? creditMag : debitMag;
+      proposals.push({
+        rowNumber: r + 1,
+        account: name || code,
+        cell: negCell,
+        originalText: negCell === 'credit' ? crS : drS,
+        magnitudePaise: mag,
+        assumption:
+          negCell === 'credit'
+            ? `The credit-column value "${crS}" is parenthesised/negative. Treat it as a debit — move ${paiseToInr(mag)} from credit → debit?`
+            : `The debit-column value "${drS}" is parenthesised/negative. Treat it as a credit — move ${paiseToInr(mag)} from debit → credit?`,
+        asWritten: { debitPaise: debitMag, creditPaise: creditMag },
+        proposed,
+        accepted,
+      });
+      if (accepted) {
+        resultDebit = proposed.debitPaise;
+        resultCredit = proposed.creditPaise;
+      }
     }
 
     rows.push({ rowNumber: r + 1, accountCode: code || name, accountName: name || code, debitPaise: resultDebit, creditPaise: resultCredit });
@@ -152,7 +172,7 @@ export function parseGrid(grid: string[][], override?: ColumnOverride): ParseRes
     columns,
     headerRow: { index: header.rowIdx, cells: headerCells },
     rows,
-    adjustments,
+    proposals,
     skipped,
     warnings,
     totals: { debitPaise: debit, creditPaise: credit, differencePaise: debit - credit },
@@ -160,8 +180,8 @@ export function parseGrid(grid: string[][], override?: ColumnOverride): ParseRes
 }
 
 /** Convenience: file → preview in one call (used by tests and the evidence harness). */
-export function parseTb(input: { buffer: Buffer; filename: string; override?: ColumnOverride }): ParseResult {
+export function parseTb(input: { buffer: Buffer; filename: string } & ParseOptions): ParseResult {
   const grid = readFileToGrid(input);
   if (!grid.ok) return grid;
-  return parseGrid(grid.grid, input.override);
+  return parseGrid(grid.grid, { override: input.override, acceptedFlips: input.acceptedFlips });
 }

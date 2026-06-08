@@ -44,6 +44,20 @@ export async function uploadTb(orgId: string, periodId: string, _prev: UploadSta
   return { ok: true };
 }
 
+// 2a) Accept / undo a per-row debit↔credit flip proposal (an accounting decision; default off).
+export async function setFlip(orgId: string, periodId: string, formData: FormData): Promise<void> {
+  const row = Number(formData.get('row'));
+  const accept = formData.get('accept') === '1';
+  if (!Number.isInteger(row)) return;
+
+  const supabase = await createClient();
+  const { data } = await supabase.from('tb_upload_staging').select('accepted_flips').eq('period_id', periodId).single();
+  const current: number[] = Array.isArray(data?.accepted_flips) ? (data!.accepted_flips as number[]) : [];
+  const next = accept ? Array.from(new Set([...current, row])) : current.filter((r) => r !== row);
+  await supabase.from('tb_upload_staging').update({ accepted_flips: next }).eq('period_id', periodId);
+  revalidate(orgId, periodId);
+}
+
 // 2) Re-assign which source column feeds each role, then re-read the staged grid.
 export async function reassignColumns(orgId: string, periodId: string, formData: FormData): Promise<void> {
   const override: ColumnOverride = {};
@@ -63,12 +77,16 @@ export async function confirmTb(orgId: string, periodId: string): Promise<void> 
   const supabase = await createClient();
   const { data: staging } = await supabase
     .from('tb_upload_staging')
-    .select('raw_grid, column_override, filename')
+    .select('raw_grid, column_override, accepted_flips, filename')
     .eq('period_id', periodId)
     .single();
   if (!staging) return;
 
-  const preview = parseGrid(staging.raw_grid as unknown as string[][], (staging.column_override as ColumnOverride | null) ?? undefined);
+  const acceptedFlips = Array.isArray(staging.accepted_flips) ? (staging.accepted_flips as number[]) : [];
+  const preview = parseGrid(staging.raw_grid as unknown as string[][], {
+    override: (staging.column_override as ColumnOverride | null) ?? undefined,
+    acceptedFlips,
+  });
   if (!preview.ok) return; // should not happen (validated at upload); leave staging for re-review
 
   await supabase.from('trial_balance_lines').delete().eq('period_id', periodId);
@@ -93,7 +111,8 @@ export async function confirmTb(orgId: string, periodId: string): Promise<void> 
       detail: {
         file: staging.filename,
         rows: payload.length,
-        adjustments: preview.adjustments.length,
+        proposals: preview.proposals.length,
+        flips_accepted: acceptedFlips.length,
         skipped: preview.skipped.length,
         columns: Object.fromEntries(COLUMN_ROLES.map((r) => [r, preview.columns[r].header])),
       },

@@ -56,16 +56,28 @@ test('parseTb surfaces column mapping, a sign flip, and a skipped Total row', ()
   assert.equal(res.columns.code.header, 'Ledger Code'); // synonym surfaced
   assert.equal(res.columns.credit.header, 'Credit Amount');
 
-  assert.equal(res.adjustments.length, 1);
-  assert.equal(res.adjustments[0].account, 'Bank Charges Refund');
-  assert.equal(res.adjustments[0].resultDebitPaise, 1000000); // ₹10,000 moved to debit
-  assert.match(res.adjustments[0].reasons.join('; '), /negative|credit → debit/);
+  // The sign flip is a PROPOSAL, default OFF — the value stays as written in its original column.
+  assert.equal(res.proposals.length, 1);
+  assert.equal(res.proposals[0].account, 'Bank Charges Refund');
+  assert.equal(res.proposals[0].cell, 'credit');
+  assert.equal(res.proposals[0].originalText, '(10,000)');
+  assert.equal(res.proposals[0].accepted, false);
+
+  // As written: ₹10,000 stays in CREDIT → the TB is OUT of balance by ₹20,000 (the gate will catch it,
+  // rather than the parser silently making it balance).
+  assert.equal(res.totals.debitPaise, 50000000);
+  assert.equal(res.totals.creditPaise, 52000000);
 
   assert.equal(res.skipped.length, 1);
   assert.match(res.skipped[0].reason, /Total/);
 
-  assert.equal(res.totals.debitPaise, 51000000);
-  assert.equal(res.totals.creditPaise, 51000000);
+  // Accepting the flip moves it credit → debit and balances the TB — the analyst's explicit choice.
+  const flipped = parseTb({ ...buf(csv), acceptedFlips: [4] });
+  assert.equal(flipped.ok, true);
+  if (!flipped.ok) return;
+  assert.equal(flipped.proposals[0].accepted, true);
+  assert.equal(flipped.totals.debitPaise, 51000000);
+  assert.equal(flipped.totals.creditPaise, 51000000);
 });
 
 // --- GATE CASE (c): garbage / unrecognised column layout → BLOCK ----------

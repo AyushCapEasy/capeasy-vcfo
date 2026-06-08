@@ -13,11 +13,14 @@ export async function getStagingPreview(periodId: string): Promise<{ filename: s
   const supabase = await createClient();
   const { data } = await supabase
     .from('tb_upload_staging')
-    .select('filename, raw_grid, column_override')
+    .select('filename, raw_grid, column_override, accepted_flips')
     .eq('period_id', periodId)
     .single();
   if (!data) return null;
-  const preview = parseGrid(data.raw_grid as unknown as string[][], (data.column_override as ColumnOverride | null) ?? undefined);
+  const preview = parseGrid(data.raw_grid as unknown as string[][], {
+    override: (data.column_override as ColumnOverride | null) ?? undefined,
+    acceptedFlips: Array.isArray(data.accepted_flips) ? (data.accepted_flips as number[]) : [],
+  });
   return { filename: data.filename, preview };
 }
 

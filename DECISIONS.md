@@ -116,6 +116,13 @@
 
 ## OPEN — needs CA ([VALIDATE] / CA-VALIDATE)
 
+- **CA-VALIDATE** Parenthesis / leading-minus sign-handling rules in TB intake (`src/lib/intake/parse.ts`).
+  These are **accounting rules, not parsing rules** — a parenthesised/negative value in a debit or credit
+  column *might* mean it belongs on the opposite side (a refund booked as a negative, a contra entry, etc.),
+  and that changes the statements. The engine therefore **never** moves a value between debit/credit
+  automatically: it imports as written in the original column and offers an opt-in per-row flip the analyst
+  accepts (M3 add-on, D-006). **The default interpretation and the wording of the proposal need CA sign-off
+  before any real client file is processed.** Until then, treat accepted flips as provisional.
 - **[VALIDATE]** Cash-flow indirect construction + tax-line treatment (Bible §4.1, §11).
 - **[VALIDATE]** MRR / churn definitions per client model (Bible §4.4, §11).
 - **[VALIDATE]** All statutory dates against official portals; TY 2026-27 transitional edge cases (§6).

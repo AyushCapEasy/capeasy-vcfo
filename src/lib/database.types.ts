@@ -474,6 +474,7 @@ export type Database = {
           raw_grid: Json
           column_override: Json | null
           created_at: string
+          accepted_flips: Json
         }
         Insert: {
           id?: string
@@ -483,6 +484,7 @@ export type Database = {
           raw_grid?: Json
           column_override?: Json | null
           created_at?: string
+          accepted_flips?: Json
         }
         Update: {
           id?: string
@@ -492,6 +494,7 @@ export type Database = {
           raw_grid?: Json
           column_override?: Json | null
           created_at?: string
+          accepted_flips?: Json
         }
         Relationships: []
       }

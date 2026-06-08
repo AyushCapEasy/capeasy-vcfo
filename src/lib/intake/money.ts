@@ -1,17 +1,19 @@
-// src/lib/intake/money.ts — parse a messy rupees cell to integer paise (Build Plan §5: never float).
-// Handles: plain numbers, comma grouping (Indian/Western), ₹/Rs/INR symbols, parentheses-negatives,
-// leading-minus, blanks. Returns null for genuinely non-numeric content (→ analyst-facing bad_amount).
+// src/lib/intake/money.ts — parse a messy rupees cell. Magnitude (formatting) is separated from
+// sign (an ACCOUNTING signal): commas/₹/Rs/INR stripping is pure formatting and applied silently,
+// but a parenthesis/minus is only RECORDED — never acted on here — because moving a value between
+// debit and credit changes its accounting meaning and is the analyst's decision (Bible §8.5).
 
-export function rupeesCellToPaise(raw: unknown): number | null {
-  if (raw === null || raw === undefined) return 0;
+/** Magnitude in paise + whether the cell carried a negative marker. null = non-numeric. */
+export function parseAmountCell(raw: unknown): { magnitudePaise: number; negative: boolean } | null {
+  if (raw === null || raw === undefined) return { magnitudePaise: 0, negative: false };
 
   if (typeof raw === 'number') {
     if (!Number.isFinite(raw)) return null;
-    return Math.round(raw * 100);
+    return { magnitudePaise: Math.round(Math.abs(raw) * 100), negative: raw < 0 };
   }
 
   let s = String(raw).trim();
-  if (s === '' || s === '-' || s === '—') return 0;
+  if (s === '' || s === '-' || s === '—') return { magnitudePaise: 0, negative: false };
 
   let negative = false;
   if (/^\(.*\)$/.test(s)) {
@@ -23,16 +25,20 @@ export function rupeesCellToPaise(raw: unknown): number | null {
     s = s.slice(1).trim();
   }
 
-  // Strip currency markers and digit-group separators / spaces.
-  s = s.replace(/₹|rs\.?|inr/gi, '').replace(/[,\s]/g, '').trim();
-  if (s === '') return 0;
+  s = s.replace(/₹|rs\.?|inr/gi, '').replace(/[,\s]/g, '').trim(); // formatting only
+  if (s === '') return { magnitudePaise: 0, negative: false };
 
-  if (!/^\d+(\.\d+)?$/.test(s)) return null; // letters / stray symbols → non-numeric
+  if (!/^\d+(\.\d+)?$/.test(s)) return null;
   const val = Number(s);
   if (!Number.isFinite(val)) return null;
+  return { magnitudePaise: Math.round(val * 100), negative };
+}
 
-  const paise = Math.round(val * 100);
-  return negative ? -paise : paise;
+/** Signed paise (magnitude with sign applied). Used where a single signed number is wanted. */
+export function rupeesCellToPaise(raw: unknown): number | null {
+  const r = parseAmountCell(raw);
+  if (r === null) return null;
+  return r.negative ? -r.magnitudePaise : r.magnitudePaise;
 }
 
 /** Format paise as ₹ for analyst-facing messages (e.g. -12345 → "-₹123.45"). */

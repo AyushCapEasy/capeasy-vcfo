@@ -2,7 +2,7 @@
 // Every tolerance is shown for explicit approval; nothing is committed until the analyst confirms.
 import { paiseToInr } from '@/lib/intake/money';
 import { COLUMN_ROLES, type ColumnRole, type ParseResult } from '@/lib/intake/types';
-import { reassignColumns, confirmTb, cancelTb } from './actions';
+import { reassignColumns, confirmTb, cancelTb, setFlip } from './actions';
 
 const ROLE_LABEL: Record<ColumnRole, string> = { code: 'account_code', name: 'account_name', debit: 'debit', credit: 'credit' };
 
@@ -48,31 +48,50 @@ export function ConfirmPanel({ orgId, periodId, filename, preview }: { orgId: st
             </form>
           </div>
 
-          {/* Normalizations applied */}
+          {/* Proposed debit↔credit moves — OFF by default; the analyst opts into each one */}
           <div>
             <h3 className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-              Sign / side adjustments ({preview.adjustments.length})
+              Proposed debit ↔ credit moves ({preview.proposals.length})
             </h3>
-            {preview.adjustments.length ? (
-              <div className="overflow-hidden rounded-lg border border-amber-300 dark:border-amber-900">
-                <table className="w-full text-sm">
-                  <thead className="bg-amber-50 text-left text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
-                    <tr><th className="px-3 py-2">Row</th><th className="px-3 py-2">Account</th><th className="px-3 py-2">As written (dr / cr)</th><th className="px-3 py-2">Read as (dr / cr)</th><th className="px-3 py-2">Why</th></tr>
-                  </thead>
-                  <tbody className="divide-y divide-amber-200 dark:divide-amber-900">
-                    {preview.adjustments.map((a) => (
-                      <tr key={a.rowNumber}>
-                        <td className="px-3 py-2 tabular-nums text-neutral-500">{a.rowNumber}</td>
-                        <td className="px-3 py-2">{a.account}</td>
-                        <td className="px-3 py-2 tabular-nums">{a.originalDebit} / {a.originalCredit}</td>
-                        <td className="px-3 py-2 tabular-nums font-medium">{a.resultDebitPaise ? paiseToInr(a.resultDebitPaise) : '—'} / {a.resultCreditPaise ? paiseToInr(a.resultCreditPaise) : '—'}</td>
-                        <td className="px-3 py-2 text-xs text-neutral-600 dark:text-neutral-400">{a.reasons.join('; ')}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : <p className="text-sm text-neutral-500">None — no signs were flipped and no rows were netted.</p>}
+            <p className="mb-3 text-xs text-neutral-500">
+              Values are imported <strong>as written, in their original column</strong>. A parenthesis or minus only
+              raises a proposal — moving a value between debit and credit changes its accounting meaning, so it is your
+              decision, never automatic.
+            </p>
+            {preview.proposals.length ? (
+              <ul className="space-y-3">
+                {preview.proposals.map((p) => (
+                  <li key={p.rowNumber} className={`rounded-lg border p-3 text-sm ${p.accepted ? 'border-blue-300 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20' : 'border-neutral-200 dark:border-neutral-800'}`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-medium">Row {p.rowNumber} · {p.account}</span>
+                      <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${p.accepted ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'}`}>
+                        {p.accepted ? 'FLIP ACCEPTED' : 'AS WRITTEN'}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-neutral-600 dark:text-neutral-400">
+                      Original cell <code>{p.originalText}</code> in the <strong>{p.cell}</strong> column. {p.assumption}
+                    </p>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      <div className={`rounded border px-2 py-1 text-xs ${!p.accepted ? 'border-neutral-500 dark:border-neutral-500' : 'border-neutral-200 opacity-60 dark:border-neutral-800'}`}>
+                        <div className="font-medium">As written (default)</div>
+                        <div className="tabular-nums">dr {p.asWritten.debitPaise ? paiseToInr(p.asWritten.debitPaise) : '—'} · cr {p.asWritten.creditPaise ? paiseToInr(p.asWritten.creditPaise) : '—'}</div>
+                      </div>
+                      <div className={`rounded border px-2 py-1 text-xs ${p.accepted ? 'border-blue-500 dark:border-blue-500' : 'border-neutral-200 opacity-60 dark:border-neutral-800'}`}>
+                        <div className="font-medium">If flipped</div>
+                        <div className="tabular-nums">dr {p.proposed.debitPaise ? paiseToInr(p.proposed.debitPaise) : '—'} · cr {p.proposed.creditPaise ? paiseToInr(p.proposed.creditPaise) : '—'}</div>
+                      </div>
+                    </div>
+                    <form action={setFlip.bind(null, orgId, periodId)} className="mt-2">
+                      <input type="hidden" name="row" value={p.rowNumber} />
+                      <input type="hidden" name="accept" value={p.accepted ? '0' : '1'} />
+                      <button className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-900">
+                        {p.accepted ? 'Undo — keep as written' : `Accept — move ${p.cell} → ${p.cell === 'credit' ? 'debit' : 'credit'}`}
+                      </button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="text-sm text-neutral-500">None — no parenthesised/negative values to interpret.</p>}
           </div>
 
           {/* Skipped rows */}
