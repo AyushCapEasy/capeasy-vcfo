@@ -7,7 +7,20 @@
 
 ## 🔴 ACTIVE — TOP PRIORITY (spine / DB)
 
-### B-001 · M0.5 DB pre-flight cannot pass — real credentials missing
+_(none — B-001 resolved 2026-06-08; see below)_
+
+---
+
+## ✅ RESOLVED
+
+### ~~B-001 · M0.5 DB pre-flight cannot pass — real credentials missing~~ ✅ RESOLVED 2026-06-08
+- **Resolution (2026-06-08):** Operator saved the real `capeasy-vcfo` secrets into THIS `.env.local`
+  (anon key, service_role key, and `DATABASE_URL` password). `npm install pg` →
+  `node scripts/db-preflight.mjs` exited **0**: CONNECTED to `capeasy-vcfo` (ref `rsaztdwxrzgyxkvxrqrt`),
+  PostgreSQL **17.6**, database `postgres`. Note: the DB password contains a literal `@`
+  (`‹redacted-history-purge›`); it parsed correctly because the URL spec uses the LAST `@` as the
+  user/host delimiter and modern `pg` re-encodes via `new URL` — no edit to the connection string needed.
+  M0.5 gate is GREEN; M1 unblocked.
 - **Milestone:** M0.5 (mandatory gate; blocks M1 and the entire spine M1→M3→M5→M6).
 - **What's stuck:** `.env.local` was scaffolded at M0 with **placeholder** secrets
   (`NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL` password all = `REPLACE_*`).
@@ -27,10 +40,5 @@
   DATABASE_URL len 96; URL/ref already correct). No `.env.local` exists in any sibling/alternate path
   (`vcfo Saas\`, Downloads, home). The edit did not land on this file. **Action unchanged:** edit the three
   `REPLACE_*` lines in THIS exact file and save, then `node scripts/db-preflight.mjs`.
-- **Status:** OPEN — opened at M0; re-confirmed blocked 2026-06-08.
-
----
-
-## ✅ RESOLVED
-
-_(none yet)_
+- **Status:** ✅ RESOLVED 2026-06-08 — opened at M0, re-confirmed blocked twice 2026-06-08, cleared once the
+  operator saved real creds and the live pre-flight connected.

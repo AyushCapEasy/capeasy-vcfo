@@ -1,0 +1,24 @@
+{
+  "name": "capeasy-vcfo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Internal virtual-CFO / MIS engine for CapEasy (not client-facing in v1).",
+  "scripts": {
+    "db:preflight": "node scripts/db-preflight.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AyushCapEasy/capeasy-vcfo.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/AyushCapEasy/capeasy-vcfo/issues"
+  },
+  "homepage": "https://github.com/AyushCapEasy/capeasy-vcfo#readme",
+  "dependencies": {
+    "pg": "^8.21.0"
+  }
+}
