@@ -7,7 +7,7 @@
 // Output shape matches @supabase/supabase-js: `export type Database = { public: { Tables,
 // Views, Functions, Enums, CompositeTypes } }` plus the standard Tables<>/Insert/Update helpers.
 //
-//   node scripts/gen-types.mjs > database.types.ts
+//   node scripts/gen-types.mjs > src/lib/database.types.ts
 import { loadEnv } from './_env.mjs';
 
 const env = loadEnv();
@@ -74,7 +74,7 @@ try {
   const out = [];
   out.push('// database.types.ts — GENERATED from the live capeasy-vcfo schema.');
   out.push('// Source of truth: Postgres @ db.rsaztdwxrzgyxkvxrqrt (ref rsaztdwxrzgyxkvxrqrt).');
-  out.push('// Regenerate after every migration:  node scripts/gen-types.mjs > database.types.ts');
+  out.push('// Regenerate after every migration:  node scripts/gen-types.mjs > src/lib/database.types.ts');
   out.push('// (Direct introspection over DATABASE_URL — no supabase link / token, Build Plan §5.)');
   out.push('// Do not edit by hand.');
   out.push('');

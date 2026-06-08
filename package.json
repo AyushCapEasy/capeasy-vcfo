@@ -4,12 +4,17 @@
   "private": true,
   "description": "Internal virtual-CFO / MIS engine for CapEasy (not client-facing in v1).",
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "db:preflight": "node scripts/db-preflight.mjs",
     "db:migrate": "node scripts/db-migrate.mjs",
     "db:migrate:status": "node scripts/db-migrate.mjs --status",
     "db:seed": "node scripts/seed.mjs",
     "db:check": "node scripts/db-check.mjs",
-    "db:types": "node scripts/gen-types.mjs > database.types.ts"
+    "db:types": "node scripts/gen-types.mjs > src/lib/database.types.ts"
   },
   "repository": {
     "type": "git",
@@ -18,12 +23,26 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/AyushCapEasy/capeasy-vcfo/issues"
   },
   "homepage": "https://github.com/AyushCapEasy/capeasy-vcfo#readme",
   "dependencies": {
-    "pg": "^8.21.0"
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.108.0",
+    "next": "16.2.7",
+    "pg": "^8.21.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.7",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
