@@ -5,7 +5,21 @@
 import { createClient } from '@/lib/supabase/server';
 import { validateTb, type ContinuityInput } from './validate';
 import { suggestCategories, type Suggestion } from './fuzzy';
-import type { CategoryMeta, ParsedTbRow, ValidationReport } from './types';
+import { parseGrid } from './parse';
+import type { CategoryMeta, ParsedTbRow, ValidationReport, ParseResult, ColumnOverride } from './types';
+
+/** Load the staged (uploaded-but-not-committed) file for a period and re-derive its preview. */
+export async function getStagingPreview(periodId: string): Promise<{ filename: string | null; preview: ParseResult } | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('tb_upload_staging')
+    .select('filename, raw_grid, column_override')
+    .eq('period_id', periodId)
+    .single();
+  if (!data) return null;
+  const preview = parseGrid(data.raw_grid as unknown as string[][], (data.column_override as ColumnOverride | null) ?? undefined);
+  return { filename: data.filename, preview };
+}
 
 export type IntakeAccount = {
   code: string;

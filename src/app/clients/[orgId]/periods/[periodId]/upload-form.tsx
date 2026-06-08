@@ -38,11 +38,6 @@ export function UploadForm({ orgId, periodId }: { orgId: string; periodId: strin
         </div>
       ) : null}
 
-      {state.ok ? (
-        <p className="text-sm text-emerald-700 dark:text-emerald-400">
-          Imported {state.inserted} line(s).{state.warnings?.length ? ` ${state.warnings.join(' ')}` : ''}
-        </p>
-      ) : null}
     </form>
   );
 }

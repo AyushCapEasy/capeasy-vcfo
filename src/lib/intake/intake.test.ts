@@ -40,6 +40,34 @@ test('parseTb reads the default column format', () => {
   );
 });
 
+// --- parse transparency: mapping, sign flip, skipped row are all surfaced --
+test('parseTb surfaces column mapping, a sign flip, and a skipped Total row', () => {
+  const csv = [
+    'Ledger Code,Particulars,Debit Amount,Credit Amount', // synonyms, not canonical headers
+    '1000,Cash at Bank,"5,00,000",0',
+    '4000,Sales – Services,0,"5,10,000"',
+    '6500,Bank Charges Refund,0,"(10,000)"', // (x) → flips credit to a ₹10,000 debit
+    'Total,,"5,10,000","5,10,000"', // dropped
+  ].join('\n');
+  const res = parseTb(buf(csv));
+  assert.equal(res.ok, true);
+  if (!res.ok) return;
+
+  assert.equal(res.columns.code.header, 'Ledger Code'); // synonym surfaced
+  assert.equal(res.columns.credit.header, 'Credit Amount');
+
+  assert.equal(res.adjustments.length, 1);
+  assert.equal(res.adjustments[0].account, 'Bank Charges Refund');
+  assert.equal(res.adjustments[0].resultDebitPaise, 1000000); // ₹10,000 moved to debit
+  assert.match(res.adjustments[0].reasons.join('; '), /negative|credit → debit/);
+
+  assert.equal(res.skipped.length, 1);
+  assert.match(res.skipped[0].reason, /Total/);
+
+  assert.equal(res.totals.debitPaise, 51000000);
+  assert.equal(res.totals.creditPaise, 51000000);
+});
+
 // --- GATE CASE (c): garbage / unrecognised column layout → BLOCK ----------
 test('GATE(c): unrecognised columns are blocked at parse', () => {
   const res = parseTb(buf('foo,bar,baz\n1,2,3\n9,8,7\n'));

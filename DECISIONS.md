@@ -85,6 +85,20 @@
   header-synonym table + parser are the only things that change.
 - **Reversible?** Yes — parsing is isolated in `src/lib/intake/parse.ts`; the lock is a config-level change.
 
+### D-006 · Parse-confirmation step — tolerances are shown and approved, never silent (traceability)
+- **Date:** 2026-06-08 · **Milestone:** M3. · **Operator-directed** (M3 review): silent parser tolerances
+  violate Bible §8.5 — a misread column can produce a **balanced-but-wrong** TB the gate cannot catch
+  (it still balances).
+- **Decision:** upload no longer writes intake data directly. The raw file grid is **staged**
+  (`tb_upload_staging`, migration 0007); the analyst is shown a **"here's how I read your file"** screen —
+  the column→role mapping (reassignable), **every** row where a sign was flipped / `(x)` converted / a side
+  moved (with the original vs read value + reason), **every** skipped row (e.g. `Total`) with its original
+  text, and the resulting Σdebits/Σcredits — and must **Confirm** before anything is written to
+  `trial_balance_lines`. Reject → reassign columns and re-read, or cancel. Tolerances are kept (so real
+  exports still load) but are now **visible and approved**, not automatic. Confirm re-parses the staged grid
+  server-side (never trusts client numbers) and records the approved adjustment/skip counts in the audit log.
+- **Reversible?** Yes — staging + confirm is additive; the parser/gate are unchanged underneath.
+
 ---
 
 ## OPEN — needs Ayush ([ADD DETAIL]) — carried from Bible §11

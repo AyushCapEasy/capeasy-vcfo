@@ -1,6 +1,6 @@
 // database.types.ts — GENERATED from the live capeasy-vcfo schema.
 // Source of truth: Postgres @ db.rsaztdwxrzgyxkvxrqrt (ref rsaztdwxrzgyxkvxrqrt).
-// Regenerate after every migration:  node scripts/gen-types.mjs > database.types.ts
+// Regenerate after every migration:  node scripts/gen-types.mjs > src/lib/database.types.ts
 // (Direct introspection over DATABASE_URL — no supabase link / token, Build Plan §5.)
 // Do not edit by hand.
 
@@ -462,6 +462,36 @@ export type Database = {
           filename?: string
           checksum?: string
           applied_at?: string
+        }
+        Relationships: []
+      }
+      tb_upload_staging: {
+        Row: {
+          id: string
+          period_id: string
+          org_id: string
+          filename: string | null
+          raw_grid: Json
+          column_override: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          period_id: string
+          org_id: string
+          filename?: string | null
+          raw_grid?: Json
+          column_override?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          period_id?: string
+          org_id?: string
+          filename?: string | null
+          raw_grid?: Json
+          column_override?: Json | null
+          created_at?: string
         }
         Relationships: []
       }

@@ -3,11 +3,12 @@
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { getPeriodIntake } from '@/lib/intake/server-data';
+import { getPeriodIntake, getStagingPreview } from '@/lib/intake/server-data';
 import { paiseToInr } from '@/lib/intake/money';
 import { monthLabel, taxYearLabel } from '@/lib/intake/period';
 import type { ValidationRule } from '@/lib/intake/types';
 import { UploadForm } from './upload-form';
+import { ConfirmPanel } from './confirm-panel';
 import { saveMapping, finalizePeriod } from './actions';
 
 const GROUP_LABEL: Record<string, string> = {
@@ -43,6 +44,8 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
   const intake = await getPeriodIntake(periodId);
   if (!intake || intake.period.orgId !== orgId) notFound();
 
+  const staging = await getStagingPreview(periodId);
+
   const { data: org } = await supabase.from('orgs').select('legal_name').eq('id', orgId).single();
   const { period, categoryOptions, accounts, hasTb, report } = intake;
 
@@ -64,6 +67,10 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
       </header>
 
       <main className="flex-1 space-y-8 p-6">
+        {staging ? (
+          <ConfirmPanel orgId={orgId} periodId={periodId} filename={staging.filename} preview={staging.preview} />
+        ) : (
+        <>
         {/* 1) Upload */}
         <section>
           <h2 className="mb-2 text-sm font-semibold">1 · Upload trial balance</h2>
@@ -173,6 +180,8 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
           </>
         ) : (
           <p className="text-sm text-neutral-500">Upload a trial balance to begin mapping and validation.</p>
+        )}
+        </>
         )}
       </main>
     </div>
