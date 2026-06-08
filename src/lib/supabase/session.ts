@@ -33,7 +33,19 @@ export async function updateSession(request: NextRequest) {
 
   // IMPORTANT (@supabase/ssr): do not run other logic between createServerClient and getUser,
   // or you risk hard-to-debug session desync.
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Auth gate: unauthenticated requests go to /login (which is itself allowed through).
+  // Admin-provisioned model — there is no public signup route to whitelist (Build Plan §6 P0).
+  const path = request.nextUrl.pathname;
+  const isAuthRoute = path === '/login' || path.startsWith('/login/');
+  if (!user && !isAuthRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
+  }
 
   return supabaseResponse;
 }

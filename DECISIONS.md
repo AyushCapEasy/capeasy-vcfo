@@ -54,6 +54,22 @@
   CF statement) and ship the perturbation test. The invariant checks **engine arithmetic**, not number
   correctness — correctness stays the CA golden fixture (PENDING, Bible §10.6).
 
+### D-004 · Auth = admin-provisioned, no public signup; first admin = ayush@capeasy.in
+- **Date:** 2026-06-08 · **Milestone:** M2. · **Operator-confirmed** (chose "Admin-provisioned, no
+  public signup" + "Seed ayush@capeasy.in, temp password I disclose").
+- **Context:** v1 is internal, not self-serve (Build Plan §1, §6). Real email is mocked in v1, so
+  magic-link / email-invite flows can't actually send. Internal staff still need accounts.
+- **Decision:** No public `/signup` route. Accounts are admin-provisioned. The **first admin**
+  (`ayush@capeasy.in`) is bootstrapped by `scripts/seed-admin.mjs` (Supabase Auth Admin API via the
+  service_role key, server-side only) with a **random temp password disclosed once** in the script
+  output — change on first login. Migration `0006_profile_on_signup.sql` auto-creates a `public.profiles`
+  row for every `auth.users` insert, so seeded and future in-app users are uniform. The admin is added
+  as an admin-member of every existing client org so RLS grants visibility.
+- **Deferred:** the in-app UI for an admin to create/invite analysts and assign roles. Until it exists,
+  add analysts by running `node scripts/seed-admin.mjs <email>` (then grant org membership). Also deferred:
+  an audit-log viewer (writes already happen on login/logout).
+- **Reversible?** Yes — auth model is app-level; switching to open signup later is a route + policy change.
+
 ---
 
 ## OPEN — needs Ayush ([ADD DETAIL]) — carried from Bible §11
