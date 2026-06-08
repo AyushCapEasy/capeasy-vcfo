@@ -93,7 +93,7 @@ Per milestone: do the work → run build + typecheck + tests (no proceeding on r
 - [x] **M0 — Project setup & plan.** STATUS: _green · 2026-06-08 — root `D:\AyushProjects\vcfo` (see DECISIONS D-001), both .md moved in, git+remote set, scaffolding + BLOCKERS/DECISIONS written, committed_
   - The build files are in the operator's **Downloads** folder: this plan (`vCFO-Build-Plan.md`) and `vCFO-Dashboard-Knowledge-Bible.md`. Using Claude Code: create `D:\AyushProjects\vcfo Saas`, **move both .md files into it** (this plan becomes the in-repo living backlog), `git init`, set remote to the GitHub repo, first commit.
   - Create `BLOCKERS.md` / `DECISIONS.md`. Re-read the Bible v1.1. Confirm the stack against §5. Write the concrete plan into the Handoff Log. Commit.
-- [ ] **M0.5 — DB pre-flight gate (mandatory, supervise this one).** STATUS: _not started_
+- [ ] **M0.5 — DB pre-flight gate (mandatory, supervise this one).** STATUS: _🔴 BLOCKED · 2026-06-08 — `.env.local` holds placeholder secrets; preflight refused to connect (no SQLite fallback). See BLOCKERS B-001. Fill real creds → `node scripts/db-preflight.mjs` → must be green before M1._
   - Verify connectivity to `capeasy-vcfo` using `.env.local`. **If you cannot connect, STOP and write `BLOCKERS.md`. Do NOT fall back to SQLite or any local store** — a fake DB can't test RLS, which is the whole point. Must pass before M1.
 - [ ] **M1 — Schema + seed.** STATUS: _not started_
   - SQL migrations for all P0+P1 models incl. **Period.prior_period_id**; RLS enabled on every org-scoped table. Seed: demo client + **THREE consecutive periods** of trial balance (so cash flow, deltas, MoM are exercisable). Generate `database.types.ts`. Commit.
@@ -133,6 +133,7 @@ The reviewing CA is not available now, so no golden fixture is provided. Build t
 > One dated line per milestone or session boundary so the next instance knows exactly where things stand. First entry written at M0.
 
 - **2026-06-08 · M0 [green]** — Created repo root `D:\AyushProjects\vcfo` (dropped "Saas" per Bible naming rule, operator-authorized — DECISIONS D-001). MOVED both build files out of `Downloads` into the repo: `vCFO-Build-Plan.md` (now the in-repo living backlog) + `vCFO-Dashboard-Knowledge-Bible.md` (name already correct). `git init -b main`; remote `origin` → https://github.com/AyushCapEasy/capeasy-vcfo.git (set, **not** pushed). Re-read Bible v1.1. Confirmed §5 stack tooling: node v24.15, npm 11.12, git 2.54, gh 2.93. Wrote `.gitignore` (all env secrets excluded), `.env.example`, `.env.local` (placeholder secrets — DECISIONS D-002), `BLOCKERS.md`, `DECISIONS.md`. Committed.
+- **2026-06-08 · M0.5 [BLOCKED]** — Added reusable `scripts/db-preflight.mjs` (placeholder/wrong-ref guards + real `pg` connect). Ran it: **exit 2, BLOCKED** — `.env.local` still has placeholder secrets (anon key, service_role, DATABASE_URL password), so no live connection to `capeasy-vcfo` was possible. STOPPED at the gate; **no SQLite/local fallback** (a fake DB can't test RLS). Logged BLOCKERS B-001. **Next instance: do NOT start M1** until the operator fills the three real creds and `node scripts/db-preflight.mjs` exits 0.
 
 ---
 
