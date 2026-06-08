@@ -1,0 +1,48 @@
+# DECISIONS — vCFO MIS Engine
+
+> Append-only log of every decision needing **Ayush** or the **CA**: each `CA-VALIDATE`, `[ADD DETAIL]`,
+> `[VALIDATE]`, and `[INPUT REQUIRED]` raised during the build, plus build-time calls the agent made that
+> the operator should be able to review/override (Build Plan §0, §10; Bible §11). Newest at bottom.
+
+---
+
+## Decisions already taken (agent, operator-authorized)
+
+### D-001 · Project folder name = `D:\AyushProjects\vcfo` (dropped "Saas")
+- **Date:** 2026-06-08 · **Milestone:** M0.
+- **Context:** Build Plan §2 specifies the root as `D:\AyushProjects\vcfo Saas`, but the Bible's
+  load-bearing v1.1 change (changelog, §0, §1) is *"this is an internal MIS engine, **not 'SaaS'** —
+  drop the word."* The two disagreed.
+- **Decision:** Operator instructed "keep the folder name mentioned in the Bible," so the banned word
+  was removed → root is **`D:\AyushProjects\vcfo`**. Side benefit: removes the space that caused
+  Windows/git quoting friction. Repo remote unchanged (`capeasy-vcfo`).
+- **Reversible?** Yes — trivial folder rename at this stage. Flag if `vcfo Saas` verbatim was intended.
+
+### D-002 · `.env.local` scaffolded with placeholder secrets (no fabrication)
+- **Date:** 2026-06-08 · **Milestone:** M0.
+- **Context:** Operator said "if there's no .env.local, create one." The agent must not fabricate or
+  hunt for credentials (§3).
+- **Decision:** Created `.env.local` with the **known non-secret** values from §2 (Supabase URL, ref,
+  region) and explicit `REPLACE_*` **placeholders** for the three secrets. Real values are an operator
+  input. See BLOCKERS.md B-001.
+
+---
+
+## OPEN — needs Ayush ([ADD DETAIL]) — carried from Bible §11
+
+- **[ADD DETAIL]** Exact standard TB upload template columns. Plan default to implement unless told
+  otherwise: `account_code, account_name, debit, credit` (Plan §6). _(due before M3)_
+- **[ADD DETAIL]** Rebuild-vs-extraction monthly-hours split (Bible §0.1) — the real build/no-build input.
+- **[ADD DETAIL]** Which accounting system to prioritise for *eventual* integration.
+- **[ADD DETAIL]** Fee model + prep TAT (recurring placeholders).
+- **[ADD DETAIL]** Budgets/forecasts captured? In what format? (gates budget-vs-actual, P2)
+- **[INPUT REQUIRED]** The **three-period golden-fixture numbers, CA-checked** (Bible §10.6) — blocks the
+  M5 correctness green-light; **cannot be auto-generated**. M5 will emit `PROPOSED-golden.json`
+  (all values `UNVERIFIED`) until provided.
+
+## OPEN — needs CA ([VALIDATE] / CA-VALIDATE)
+
+- **[VALIDATE]** Cash-flow indirect construction + tax-line treatment (Bible §4.1, §11).
+- **[VALIDATE]** MRR / churn definitions per client model (Bible §4.4, §11).
+- **[VALIDATE]** All statutory dates against official portals; TY 2026-27 transitional edge cases (§6).
+- _(Engine `CA-VALIDATE:` code comments will be mirrored here as they are written, from M5 onward.)_
