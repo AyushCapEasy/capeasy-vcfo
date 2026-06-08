@@ -26,6 +26,23 @@
   region) and explicit `REPLACE_*` **placeholders** for the three secrets. Real values are an operator
   input. See BLOCKERS.md B-001.
 
+### D-003 · M1 seed numbers corrected so the demo ledger articulates (exercise data, not golden)
+- **Date:** 2026-06-08 · **Milestone:** M1.
+- **Context:** `scripts/seed.mjs` self-asserts the accounting identities before writing to the DB
+  (TB balances, Assets = Liab + Equity + NetProfit, retained-earnings roll). The first-draft figures
+  failed the gate: every period was out by **exactly that month's electricity** (Apr 40,000 · May 42,000 ·
+  Jun 45,000), and each retained-earnings opening was short by the **prior** month's electricity. Root
+  cause: electricity correctly reduced P&L profit but had been omitted from the cash balance and the RE roll.
+- **Decision:** Kept every P&L line (electricity stays a real mapped expense — it still demonstrates the
+  6100+6110 → `rent_utilities` many-to-one mapping) and made the books articulate by (a) rolling
+  `re_opening` on the prior month's **true** net profit, and (b) letting **cash** be the balancing residual.
+  New values — cash: Apr 5,135,000 · May 4,989,500 · Jun 5,369,750; re_opening: May 1,822,500 · Jun 2,119,500.
+  All three identity assertions now pass; TBs verified balanced straight from Postgres.
+- **Scope note:** These are **exercise numbers only** (Build Plan §8 / Bible §3.5) — they make delta
+  metrics (cash flow, burn, MoM) exercisable. They are **NOT** the CA-checked golden fixture (Bible §10.6),
+  which remains an external `[INPUT REQUIRED]` and will be emitted UNVERIFIED at M5.
+- **Reversible?** Yes — seed-only; rerun `npm run db:seed` (idempotent, wipes + re-inserts the demo org).
+
 ---
 
 ## OPEN — needs Ayush ([ADD DETAIL]) — carried from Bible §11

@@ -4,7 +4,12 @@
   "private": true,
   "description": "Internal virtual-CFO / MIS engine for CapEasy (not client-facing in v1).",
   "scripts": {
-    "db:preflight": "node scripts/db-preflight.mjs"
+    "db:preflight": "node scripts/db-preflight.mjs",
+    "db:migrate": "node scripts/db-migrate.mjs",
+    "db:migrate:status": "node scripts/db-migrate.mjs --status",
+    "db:seed": "node scripts/seed.mjs",
+    "db:check": "node scripts/db-check.mjs",
+    "db:types": "node scripts/gen-types.mjs > database.types.ts"
   },
   "repository": {
     "type": "git",
