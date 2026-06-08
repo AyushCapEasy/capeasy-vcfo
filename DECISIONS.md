@@ -70,12 +70,28 @@
   an audit-log viewer (writes already happen on login/logout).
 - **Reversible?** Yes — auth model is app-level; switching to open signup later is a route + policy change.
 
+### D-005 · TB upload column format built to the default guess (still `[ADD DETAIL]` — confirm vs a real export)
+- **Date:** 2026-06-08 · **Milestone:** M3. · The exact lock-format is an Ayush input (Bible §3.4, Plan §6).
+- **What I assumed & built (the default):** a header row with four columns — **`account_code`, `account_name`,
+  `debit`, `credit`** — with values in **₹** (rupees), CSV or XLSX (first sheet).
+- **Tolerances I added so a real Tally/Zoho/Excel export is more likely to load without hand-editing:**
+  header synonyms (e.g. `code`/`ledger code`/`gl code`; `particulars`/`ledger`/`name`; `dr`/`debit amount`;
+  `cr`/`credit amount`); a header row that isn't the first row (scans the first 15); ₹/Rs/INR symbols and
+  comma grouping stripped; parentheses/leading-minus = negative; a row is **net-normalized** (debit−credit)
+  to a single side; obvious `Total`/`Grand Total` rows skipped; blank rows ignored. A non-numeric amount or
+  a layout missing any of the four roles **fails the upload** with an analyst-facing message.
+- **Still open:** confirm these columns/headers against a **real client TB export** before we lock the format.
+  If the real export differs (single signed `amount` column, multi-currency, sub-ledger columns, etc.), the
+  header-synonym table + parser are the only things that change.
+- **Reversible?** Yes — parsing is isolated in `src/lib/intake/parse.ts`; the lock is a config-level change.
+
 ---
 
 ## OPEN — needs Ayush ([ADD DETAIL]) — carried from Bible §11
 
-- **[ADD DETAIL]** Exact standard TB upload template columns. Plan default to implement unless told
-  otherwise: `account_code, account_name, debit, credit` (Plan §6). _(due before M3)_
+- **[ADD DETAIL]** Exact standard TB upload template columns. **Built to the default at M3** —
+  `account_code, account_name, debit, credit` (₹, CSV/XLSX) with header-synonym tolerance (see **D-005**).
+  Still needs Ayush to confirm the lock against a **real client export** before we freeze the format.
 - **[ADD DETAIL]** Rebuild-vs-extraction monthly-hours split (Bible §0.1) — the real build/no-build input.
 - **[ADD DETAIL]** Which accounting system to prioritise for *eventual* integration.
 - **[ADD DETAIL]** Fee model + prep TAT (recurring placeholders).

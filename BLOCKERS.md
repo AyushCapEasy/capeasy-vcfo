@@ -11,6 +11,20 @@ _(none — B-001 resolved 2026-06-08; see below)_
 
 ---
 
+## 🟡 KNOWN ITEMS (non-spine — address before client launch, not blocking the build)
+
+### B-002 · `xlsx` (SheetJS 0.18.5 from npm) carries known advisories
+- **Date:** 2026-06-08 · **Milestone:** M3. · **Severity:** moderate · **Not spine-blocking.**
+- **What:** the npm `xlsx@0.18.5` build (the one `npm install xlsx` resolves) has published advisories
+  (prototype pollution / ReDoS) that affect parsing **untrusted** workbooks.
+- **Why acceptable for now:** v1 intake is **internal** — files come from analysts processing a client's
+  own export, not arbitrary public uploads. Parsing runs server-side only.
+- **Fix before launch:** move to SheetJS's official current build (their CDN/`@sheetjs` distribution) or add
+  input hardening, and re-run `npm audit`. Parsing is isolated to `src/lib/intake/parse.ts`, so the swap is
+  contained. Revisit when intake widens beyond trusted analysts.
+
+---
+
 ## ✅ RESOLVED
 
 ### ~~B-001 · M0.5 DB pre-flight cannot pass — real credentials missing~~ ✅ RESOLVED 2026-06-08

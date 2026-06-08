@@ -2,6 +2,7 @@
 // through the ANON-key server client, so RLS decides what is visible: the signed-in user sees
 // ONLY the client orgs they are a member of. This is the first end-to-end proof of auth + RLS +
 // multi-tenancy. The full MIS workflow (intake → compute → pack) lands in later milestones.
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { signOut } from './actions';
@@ -60,20 +61,22 @@ export default async function Home() {
 
         <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {(orgs ?? []).map((o) => (
-            <li
-              key={o.id}
-              className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-medium">{o.legal_name}</span>
-                <span className="rounded bg-neutral-100 px-2 py-0.5 text-[10px] font-medium tracking-wide text-neutral-600 uppercase dark:bg-neutral-800 dark:text-neutral-300">
-                  {roleByOrg.get(o.id) ?? '—'}
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-neutral-500">
-                {o.entity_type}
-                {o.state ? ` · ${o.state}` : ''}
-              </p>
+            <li key={o.id}>
+              <Link
+                href={`/clients/${o.id}`}
+                className="block rounded-lg border border-neutral-200 p-4 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">{o.legal_name}</span>
+                  <span className="rounded bg-neutral-100 px-2 py-0.5 text-[10px] font-medium tracking-wide text-neutral-600 uppercase dark:bg-neutral-800 dark:text-neutral-300">
+                    {roleByOrg.get(o.id) ?? '—'}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-neutral-500">
+                  {o.entity_type}
+                  {o.state ? ` · ${o.state}` : ''}
+                </p>
+              </Link>
             </li>
           ))}
         </ul>
