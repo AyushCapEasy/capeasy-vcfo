@@ -72,6 +72,53 @@ if (missing.length || placeholder.length) {
   process.exit(2);
 }
 
+// --- Target banner: PRINT exact URL + ref before connecting (operator rule 6) ---
+let dbInfo;
+try {
+  dbInfo = new URL(env.DATABASE_URL);
+} catch {
+  console.error('M0.5: BLOCKED — DATABASE_URL is not a valid connection URL.');
+  process.exit(2);
+}
+const dbHost = dbInfo.hostname;
+const dbPort = dbInfo.port || '5432';
+const dbUser = decodeURIComponent(dbInfo.username || '');
+console.log('M0.5 TARGET (confirm before connect):');
+console.log('  SUPABASE URL : ' + env.NEXT_PUBLIC_SUPABASE_URL);
+console.log('  PROJECT REF  : ' + (env.SUPABASE_PROJECT_REF || '(unset)'));
+console.log('  DB host:port : ' + dbHost + ':' + dbPort);
+console.log('  DB user      : ' + dbUser);
+console.log('  DB password  : ' + (dbInfo.password ? '*** set ***' : '(EMPTY!)'));
+
+const EXPECTED_URL = 'https://' + REF + '.supabase.co';
+if (env.NEXT_PUBLIC_SUPABASE_URL !== EXPECTED_URL) {
+  console.error('M0.5: STOP — NEXT_PUBLIC_SUPABASE_URL != ' + EXPECTED_URL + '. Not connecting.');
+  process.exit(4);
+}
+if ((env.SUPABASE_PROJECT_REF || '') !== REF) {
+  console.error('M0.5: STOP — SUPABASE_PROJECT_REF != ' + REF + '. Not connecting.');
+  process.exit(4);
+}
+if (!dbHost.includes(REF) && !dbUser.includes(REF)) {
+  console.error('M0.5: STOP — DATABASE_URL is not for project ' + REF + '. Not connecting.');
+  process.exit(4);
+}
+// Operator rule 7: direct/session connection on 5432; never the transaction pooler (6543).
+if (dbPort === '6543') {
+  console.error('M0.5: STOP — DATABASE_URL uses transaction-pooler port 6543. Use the direct/session connection on 5432 (rule 7). Not connecting.');
+  process.exit(5);
+}
+if (dbPort !== '5432') {
+  console.error('M0.5: STOP — DATABASE_URL port is ' + dbPort + ', expected 5432 (direct/session). Not connecting.');
+  process.exit(5);
+}
+
+const CHECK_ONLY = process.argv.includes('--check');
+if (CHECK_ONLY) {
+  console.log('M0.5: TARGET OK — all guards passed. Connection NOT attempted (--check mode).');
+  process.exit(0);
+}
+
 let pg;
 try {
   pg = await import('pg');

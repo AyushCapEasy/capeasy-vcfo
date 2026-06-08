@@ -22,7 +22,12 @@
   3. `DATABASE_URL` password — Supabase → Project Settings → Database → connection string (URI),
      replace `REPLACE_WITH_DB_PASSWORD`.
   Then tell the agent to **re-run M0.5**. Connection must succeed before M1 begins.
-- **Status:** OPEN — opened at M0.
+- **2026-06-08 re-check (after operator said creds were filled):** `D:\AyushProjects\vcfo\.env.local`
+  is still the M0 scaffold — all three secrets remain literal `REPLACE_*` (anon len 21, service_role len 29,
+  DATABASE_URL len 96; URL/ref already correct). No `.env.local` exists in any sibling/alternate path
+  (`vcfo Saas\`, Downloads, home). The edit did not land on this file. **Action unchanged:** edit the three
+  `REPLACE_*` lines in THIS exact file and save, then `node scripts/db-preflight.mjs`.
+- **Status:** OPEN — opened at M0; re-confirmed blocked 2026-06-08.
 
 ---
 
