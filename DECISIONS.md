@@ -99,6 +99,69 @@
   server-side (never trusts client numbers) and records the approved adjustment/skip counts in the audit log.
 - **Reversible?** Yes — staging + confirm is additive; the parser/gate are unchanged underneath.
 
+### D-007 · Data isolation — `capeasy-vcfo` (ref `rsaztdwxrzgyxkvxrqrt`) is PERMANENTLY the dev/demo DB
+- **Date:** 2026-06-09 · **Milestone:** deploy prep. · **Operator-directed** · **PERMANENT — do not revisit
+  casually.**
+- **Decision:** The Supabase project `capeasy-vcfo` (ref `rsaztdwxrzgyxkvxrqrt`) is the **dev/demo database
+  forever** — **fake Acme/Globex demo data only**. Local development **and every Vercel environment**
+  (Preview **and** Production) point at this one project. **No real client trial balance is ever loaded into
+  this project.**
+- **When real client data is needed (later):** it goes into a **SEPARATE, deliberately-provisioned Supabase
+  project**, stood up **after a security review** — not reusing this one, and not tonight. Provisioning that
+  project is the deliberate act of pointing tooling at a new ref (see guard below).
+- **Why this is written down:** so **no future instance or teammate reasons _"it's the only DB, so the real
+  client file goes here."_** It is the only DB *on purpose*; that does not make it the right home for real data.
+- **Guards in place (cheap):**
+  - **Runtime:** the `SAMPLE — UNVERIFIED · NOT FOR CLIENT USE` watermark (`src/lib/watermark.ts`) stays **ON**
+    in all environments — `VCFO_WATERMARK_OFF` is **never** set in any Vercel environment. Every screen and
+    export is visibly marked as non-client demo output.
+  - **Tooling:** `scripts/_env.mjs` pins **all** DB tooling (migrate/seed/preflight/rls-test) to this exact
+    ref and refuses any other (Build Plan §3), and now prints a loud `DEV/DEMO DATABASE` banner on every run.
+    Pointing tooling at a different project requires a deliberate code change to `REF` — the natural gate for
+    the security-reviewed real-client project.
+- **Reversible?** The dev/demo designation is **permanent**. The real-client project is **additive** (a new,
+  separate project), never a migration of this one.
+
+### D-008 · Deploy & protection posture (Vercel) + pre-deploy security gate
+- **Date:** 2026-06-09 · **Milestone:** deploy prep. · **Operator-directed.**
+- **Security gate (must complete BEFORE the first push/connect):** the Supabase DB password is **rotated**
+  (dashboard), the new value goes into `.env.local` **only** (never Vercel — see env vars below), and the old
+  value is **purged from local git history** as belt-and-suspenders (history never left this machine — remote
+  is empty). See BLOCKERS.md B-001. Standing rule: **no secret in any tracked file, commit, or chat — ever.**
+- **Protection:** **Vercel Authentication** (per-person, revocable SSO), enabled on **both Preview and
+  Production**. **Not** a shared password.
+- **Branches:** Vercel **Production Branch = `production`** (manual-promote). **`main` = Preview only.**
+  `production` is created **deliberately/empty**, and the production-branch setting is applied **before** `main`
+  is ever pushed, so connecting the repo does **not** trigger an accidental first production deploy.
+- **Env vars in Vercel (Production + Preview):** **ONLY** `NEXT_PUBLIC_SUPABASE_URL` and
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY`. `SUPABASE_SERVICE_ROLE_KEY` and `DATABASE_URL` are **NOT** added to Vercel.
+  Verified: the deployed app (`src/`) reads only those two public vars (+ platform-set `VERCEL`/
+  `AWS_LAMBDA_FUNCTION_NAME` and the local-only `PUPPETEER_EXECUTABLE_PATH`); `service_role`/`DATABASE_URL`
+  appear in `src/` only inside comments, and are used at runtime by `scripts/` (never deployed) alone.
+- **Watermark:** stays **ON everywhere** — `VCFO_WATERMARK_OFF` is **never** set in any Vercel environment
+  (ties to D-007). `src/lib/watermark.ts` defaults ON unless `VCFO_WATERMARK_OFF=1`.
+- **PDF route (`/clients/[orgId]/mis/pdf`):** uses `puppeteer-core` + `@sparticuz/chromium`, which needs
+  raised limits — `maxDuration = 60` (route-segment export) and `memory = 1536` MB (`vercel.json` `functions`,
+  glob `src/app/**/mis/pdf/route.ts` to avoid `[orgId]` being read as a glob char class). **Known caveat:**
+  serverless cold starts for chromium are flaky — **acceptable for now, flag if it fails** in production.
+- **Reversible?** Yes — all of this is Vercel project config + a small `vercel.json`; nothing here is a
+  one-way door.
+
+### D-009 · Standing rule — no secret in any tracked file, commit, or chat (ever)
+- **Date:** 2026-06-09 · **Operator-directed** · **PERMANENT standing rule.**
+- **Rule:** No secret of any kind ever goes in a **tracked file** (not `BLOCKERS.md`, not `DECISIONS.md`, not
+  any doc), a **commit message**, a **code comment**, or **chat**. Secrets live **only** in gitignored env
+  files (`.env.local`, `.admin-credentials.local`). Reference secrets in docs by name/placeholder
+  (e.g. `REPLACE_WITH_DB_PASSWORD`), never by value.
+- **Why:** A DB password was written verbatim into `BLOCKERS.md` and committed (`948f6db`) — the same class of
+  error as an admin password pasted into chat earlier. Both leak credentials into durable, reviewable places.
+- **How to apply:** If a secret is heading toward any tracked file or chat, STOP and flag it; put it in a
+  gitignored env file. If a secret already landed in a tracked file/history, **rotate first, then purge** the
+  old value from history.
+- **Source of truth:** This file (DECISIONS.md). Governance for this build lives **only** in tracked,
+  auditable files — never in an external/agent-private store. (A prior copy of this rule mistakenly written to
+  Claude Code's out-of-repo memory store has been deleted; this entry replaces it.)
+
 ---
 
 ## OPEN — needs Ayush ([ADD DETAIL]) — carried from Bible §11

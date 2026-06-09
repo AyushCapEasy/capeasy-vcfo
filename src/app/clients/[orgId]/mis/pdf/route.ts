@@ -8,6 +8,10 @@ import { htmlToPdf } from '@/lib/pdf/render';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// @sparticuz/chromium is heavy: cold-start decompress + browser launch + render can take tens of
+// seconds and needs headroom memory. maxDuration is set here; memory is raised in vercel.json
+// (route-segment config can't set memory). Cold starts are flaky on serverless — see vercel.json.
+export const maxDuration = 60;
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;

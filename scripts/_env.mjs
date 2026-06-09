@@ -6,7 +6,13 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
+// DATA-ISOLATION GUARD (DECISIONS.md D-007): project ref rsaztdwxrzgyxkvxrqrt is PERMANENTLY the
+// dev/demo database — fake Acme/Globex data only. Local + ALL Vercel environments point here.
+// Real client trial balances NEVER go into this project; that is a SEPARATE, deliberately-provisioned
+// Supabase project (after a security review). Standing up that project is the deliberate act of
+// changing this REF — do not point real-client tooling at the dev/demo ref.
 export const REF = 'rsaztdwxrzgyxkvxrqrt';
+export const DEV_DEMO_REF = REF;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 export const ENV_PATH = resolve(__dirname, '..', '.env.local');
 
@@ -50,5 +56,7 @@ export function loadEnv() {
   const port = u.port || '5432';
   if (port === '6543') throw new Error('BLOCKED — port 6543 is the transaction pooler; use direct 5432 (rule 7).');
   if (port !== '5432') throw new Error('BLOCKED — port ' + port + ' unexpected; use direct 5432.');
+  // Loud, unmissable reminder on every DB tooling run (stderr only — never pollutes db:types stdout).
+  console.warn(`⚠️  DEV/DEMO DATABASE (capeasy-vcfo · ${REF}) — fake demo data only. NEVER load real client trial balances here (DECISIONS.md D-007).`);
   return env;
 }

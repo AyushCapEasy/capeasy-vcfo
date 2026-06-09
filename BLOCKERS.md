@@ -41,6 +41,12 @@ _(none — B-001 resolved 2026-06-08; see below)_
   > `DATABASE_URL` in `.env.local` only. The deployed app does NOT use `DATABASE_URL` (supabase-js + anon
   > key only), so the rotated value never needs to reach Vercel. Optionally purge it from local history
   > before the first push (history has not left this machine).
+  > **✅ DONE (2026-06-09):** password rotated; `DATABASE_URL` updated in `.env.local` only (live
+  > `db:preflight` reconnected — password never printed); leaked value purged from **all** local git history
+  > via `git filter-branch` (the old commit objects `948f6db`…`1bf247b` are pruned/gone, a redacted marker
+  > sits in their place). Verified **zero** occurrences in history, working tree, and on disk; remote was
+  > empty so nothing was ever pushed. The rewrite changed commit SHAs from `948f6db` onward. Standing rule
+  > recorded as DECISIONS.md **D-009** (no secret in any tracked file, commit, or chat — ever).
 - **Milestone:** M0.5 (mandatory gate; blocks M1 and the entire spine M1→M3→M5→M6).
 - **What's stuck:** `.env.local` was scaffolded at M0 with **placeholder** secrets
   (`NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL` password all = `REPLACE_*`).
