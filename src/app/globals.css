@@ -1,26 +1,31 @@
 @import "tailwindcss";
 
+/* CapEasy brand system — matched to the CRM (Inter, #1E4FA8 primary, #F08025 accent). */
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --color-primary: #1e4fa8;
+  --color-primary-foreground: #ffffff;
+  --color-accent: #f08025;
+  --color-accent-foreground: #ffffff;
+
+  --color-ink: #0f172a; /* slate-900 — headings */
+  --color-positive: #15803d; /* emerald-700 */
+  --color-negative: #b91c1c; /* red-700 */
+}
+
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --foreground: #0f172a;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-optical-sizing: auto;
+}
+
+/* Tabular figures everywhere we render money/ratios. */
+.tnum {
+  font-variant-numeric: tabular-nums;
 }

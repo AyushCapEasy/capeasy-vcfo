@@ -34,6 +34,9 @@ export default async function ClientWorkspace({ params }: { params: Promise<{ or
         <Link href="/" className="text-neutral-500 hover:underline">CapEasy vCFO</Link>
         <span className="text-neutral-400">/</span>
         <span className="font-medium">{org.legal_name}</span>
+        <Link href={`/clients/${orgId}/mis`} className="bg-primary hover:bg-primary/90 ml-auto rounded-md px-3 py-1.5 text-xs font-medium text-white">
+          View MIS pack →
+        </Link>
       </header>
 
       <main className="flex-1 p-6">

@@ -31,10 +31,15 @@ npm run dev            # http://localhost:3000  (redirects to /login)
 | **Auth + multi-tenant + roles** (M2) | ✅ | `/login` → shell lists only the client orgs you're a member of (RLS) |
 | **Intake** (M3) | ✅ | client → period → upload CSV/XLSX → **confirm how it was read** (column mapping, sign-flip proposals, skips) → map accounts (fuzzy, persisted) → §3.3 validation gate → finalise |
 | **Computation engine** (M5) | ✅ (UNVERIFIED) | `src/lib/engine` — P&L, BS, Cash Flow (2-period), ratios, working capital, startup metrics + §4.5 invariants |
-| **MIS view + PDF** (M6) | ⬜ not started | — |
+| **MIS pack + PDF** (M6) | ✅ (demo-grade, UNVERIFIED) | client → **View MIS pack** → period pills · click a P&L/BS line to drill into mapped accounts · **Export PDF** · **Download workbook** · edit + save commentary |
 
-**upload → map → compute → MIS → PDF across 3 periods:** upload→map→compute is exercisable now; the engine
-computes all 3 periods and Cash Flow across May & Jun. **MIS render + PDF export is M6 (not built).**
+**upload → map → compute → MIS → PDF across 3 periods:** the full thread is exercisable. The MIS pack renders
+all statements from the engine, with PDF export and a source-workbook download. **Every screen and PDF carries
+the SAMPLE watermark; every number is UNVERIFIED.**
+
+> **Watermark removal (after CA sign-off Thursday):** set env `VCFO_WATERMARK_OFF=1` (or flip `WATERMARK_ENABLED`
+> in `src/lib/watermark.ts`). ONE change clears the watermark from every screen and PDF. It does NOT make any
+> number "correct" — that still needs the CA-checked golden fixture replacing `PROPOSED-golden.json`.
 
 ## 3. Correctness status — PENDING (UNVERIFIED)
 
@@ -51,7 +56,7 @@ computes all 3 periods and Cash Flow across May & Jun. **MIS render + PDF export
 
 ## 4. What's stubbed / not done
 
-- **MIS view (template A) + PDF export + source-workbook download** — M6, not started (P0 remaining).
+- **P0 is complete** (foundation → intake → engine → MIS pack + PDF). All numbers remain UNVERIFIED.
 - **Investor view (B), Cash & runway (C), AR/AP aging UI, compliance calendar** — P1, not started.
 - **In-app analyst provisioning UI / audit-log viewer** — deferred (D-004); admins use `db:seed-admin`.
 - **Startup metrics needing customer/churn data** (CAC, LTV, NRR, churn, ARPA) — return n/a (no inputs).
@@ -86,8 +91,8 @@ computes all 3 periods and Cash Flow across May & Jun. **MIS render + PDF export
 
 ## 7. Suggested next-session scope
 
-- **M6 — MIS view (template A) + PDF.** Render the engine output (P&L + BS + cash-flow summary + ratios +
-  MoM trend + editable commentary), PDF export (flaky step — `puppeteer-core` + `@sparticuz/chromium`),
-  source-workbook download. **Keep every statement number marked UNVERIFIED in the UI until CA sign-off.**
-- After CA sign-off Thursday: replace `PROPOSED-golden.json` with the CA-checked `golden-client.json` and
-  assert the engine against it (closes the correctness loop, Bible §10.6).
+- **After CA sign-off (Thursday):** (a) replace `PROPOSED-golden.json` with the CA-checked `golden-client.json`
+  and assert the engine against it (closes the correctness loop, Bible §10.6); (b) clear the watermark
+  (`VCFO_WATERMARK_OFF=1`); (c) resolve the CA-VALIDATE list (§5).
+- **P1 (when ready):** Investor view (B), Cash & runway (C), AR/AP aging + schedule intake, compliance
+  calendar. Same engine, more templates.

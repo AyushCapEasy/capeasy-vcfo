@@ -179,6 +179,7 @@ export type Database = {
           status: Database["public"]["Enums"]["period_status"]
           created_at: string
           updated_at: string
+          commentary: string | null
         }
         Insert: {
           id?: string
@@ -190,6 +191,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["period_status"]
           created_at?: string
           updated_at?: string
+          commentary?: string | null
         }
         Update: {
           id?: string
@@ -201,6 +203,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["period_status"]
           created_at?: string
           updated_at?: string
+          commentary?: string | null
         }
         Relationships: []
       }
