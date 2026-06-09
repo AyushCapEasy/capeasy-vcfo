@@ -145,6 +145,20 @@
   Ayush is the **sole pusher**, so the promote discipline has no practical value here. The project was recreated
   while troubleshooting this → **new project id `prj_jCCkR771I90D5z8xHKaumh6hI0I6`** (old `prj_v4SYCG7Kt…` deleted;
   it had 0 deployments / no env, nothing lost). Operator-confirmed.
+- **⚠️ DEVIATION 2 (2026-06-09) — production domain is NOT behind the Vercel auth wall (Pro-plan ceiling):**
+  The intended exposure guard was Vercel Authentication = **All Deployments** (`ssoProtection.deploymentType="all"`)
+  covering the production domain. The team is genuinely **Pro** (`billing.plan=pro`, planIteration `plus`), yet the
+  API rejects `"all"` with **428 `invalid_sso_protection`: "Vercel Authentication is not available on your plan for
+  production deployments."** SSO-protecting the **production domain** is an **Enterprise** capability; Pro's ceiling
+  is **`all_except_custom_domains`** (Standard Protection — every **preview / deployment-hash URL** is SSO-walled,
+  the production domain is exempt). Verified: `capeasy-vcfo.vercel.app` → `307 /login` (the app, no Vercel SSO);
+  hash URL → `401` Vercel SSO. **We are NOT upgrading to Enterprise for this.**
+  **What guards the production domain instead:** the app's own Supabase auth (anonymous → `/login`; MIS data behind
+  admin-provisioned auth + RLS), the always-on watermark, and that this is the **dev/demo DB with fake data**
+  (D-007) — worst case is watermarked demo numbers, never real client data.
+  **OPERATING RULE (load-bearing):** share **only** the SSO-walled **preview/deployment-hash URLs** (e.g.
+  `capeasy-vcfo-<hash>-ayushcapeasys-projects.vercel.app`, which return the Vercel login wall); **never circulate the
+  bare `capeasy-vcfo.vercel.app` production domain.** Operator-confirmed (Option A).
 - **Env vars in Vercel (Production + Preview):** **ONLY** `NEXT_PUBLIC_SUPABASE_URL` and
   `NEXT_PUBLIC_SUPABASE_ANON_KEY`. `SUPABASE_SERVICE_ROLE_KEY` and `DATABASE_URL` are **NOT** added to Vercel.
   Verified: the deployed app (`src/`) reads only those two public vars (+ platform-set `VERCEL`/
