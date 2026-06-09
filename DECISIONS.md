@@ -133,6 +133,18 @@
 - **Branches:** Vercel **Production Branch = `production`** (manual-promote). **`main` = Preview only.**
   `production` is created **deliberately/empty**, and the production-branch setting is applied **before** `main`
   is ever pushed, so connecting the repo does **not** trigger an accidental first production deploy.
+- **⚠️ DEVIATION (2026-06-09) — `productionBranch = main` (the branch model above could NOT be implemented):**
+  The Vercel production branch could **not** be set to `production` by any reachable interface — the create API
+  silently ignores `gitRepository.productionBranch` (defaults to the repo's default branch), `PATCH /v9/projects`
+  rejects `productionBranch`/`gitRepository` as non-allowed fields, the Vercel CLI has no command for it, and the
+  dashboard control would not persist (`link.productionBranch` stayed `main` across repeated saves). After a
+  read-only deep-dump confirmed `link.productionBranch` is the **sole authoritative** production-branch field, we
+  **accepted `productionBranch = main`**. **Consequence:** no preview/promote separation — every `main` push is a
+  **production** deploy. **Why acceptable:** the real *exposure* guard is **Vercel Authentication = All Deployments**
+  (every deployment, production included, sits behind Vercel login) plus the always-on **watermark** (D-007); and
+  Ayush is the **sole pusher**, so the promote discipline has no practical value here. The project was recreated
+  while troubleshooting this → **new project id `prj_jCCkR771I90D5z8xHKaumh6hI0I6`** (old `prj_v4SYCG7Kt…` deleted;
+  it had 0 deployments / no env, nothing lost). Operator-confirmed.
 - **Env vars in Vercel (Production + Preview):** **ONLY** `NEXT_PUBLIC_SUPABASE_URL` and
   `NEXT_PUBLIC_SUPABASE_ANON_KEY`. `SUPABASE_SERVICE_ROLE_KEY` and `DATABASE_URL` are **NOT** added to Vercel.
   Verified: the deployed app (`src/`) reads only those two public vars (+ platform-set `VERCEL`/
