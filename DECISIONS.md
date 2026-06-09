@@ -123,6 +123,7 @@
   automatically: it imports as written in the original column and offers an opt-in per-row flip the analyst
   accepts (M3 add-on, D-006). **The default interpretation and the wording of the proposal need CA sign-off
   before any real client file is processed.** Until then, treat accepted flips as provisional.
+- **CA-VALIDATE (M5 engine)** Computation assumptions in `src/lib/engine` (mirrored in `fixtures/PROPOSED-golden.json` → `ca_validate`): **capex reconstructed as Δ(net depreciable assets) + D&A (no disposals)**; **dividends/distributions assumed 0** (no data in v1); **other income placed below EBIT, before tax** (seed = 0). All engine output is **UNVERIFIED** until CA sign-off (§10.6).
 - **[VALIDATE]** Cash-flow indirect construction + tax-line treatment (Bible §4.1, §11).
 - **[VALIDATE]** MRR / churn definitions per client model (Bible §4.4, §11).
 - **[VALIDATE]** All statutory dates against official portals; TY 2026-27 transitional edge cases (§6).

@@ -1,0 +1,93 @@
+# MORNING REVIEW — vCFO MIS Engine
+
+> ⛔ **GOLDEN FIXTURE PENDING AYUSH/CA SIGN-OFF.** Every computed number is **UNVERIFIED**. The engine's
+> output is in `fixtures/PROPOSED-golden.json` (all values UNVERIFIED) and `database` demo numbers are
+> **exercise data**, not CA-checked. **No statement number is "correct" or client-visible until the CA
+> signs off** (Bible §10.6). The CA-VALIDATE list for Thursday is in §5 below.
+
+_Build state: M0 → M5 green. M6 (MIS view + PDF) not started. Stopped at M5 per operator instruction._
+
+---
+
+## 1. Boot
+
+```bash
+npm install
+npm run dev            # http://localhost:3000  (redirects to /login)
+```
+- **Login:** `ayush@capeasy.in` — password is in the gitignored `.admin-credentials.local` (run `npm run db:seed-admin` to reset). Change it on first login.
+- **Demo client:** **Acme Foods Pvt Ltd** → 3 chained periods **Apr (locked) → May (reviewed) → Jun (draft)**. Open a period to exercise intake.
+- **Engine / correctness (headless):**
+  ```bash
+  npm test          # 14 unit tests incl. §4.5 invariants + the perturbation test
+  npm run fixture   # regenerate fixtures/PROPOSED-golden.json + print invariants & perturbation
+  npm run test:rls  # cross-tenant isolation against live sessions
+  ```
+
+## 2. What's working (per module)
+
+| Module | State | Click-path / command |
+|---|---|---|
+| **Auth + multi-tenant + roles** (M2) | ✅ | `/login` → shell lists only the client orgs you're a member of (RLS) |
+| **Intake** (M3) | ✅ | client → period → upload CSV/XLSX → **confirm how it was read** (column mapping, sign-flip proposals, skips) → map accounts (fuzzy, persisted) → §3.3 validation gate → finalise |
+| **Computation engine** (M5) | ✅ (UNVERIFIED) | `src/lib/engine` — P&L, BS, Cash Flow (2-period), ratios, working capital, startup metrics + §4.5 invariants |
+| **MIS view + PDF** (M6) | ⬜ not started | — |
+
+**upload → map → compute → MIS → PDF across 3 periods:** upload→map→compute is exercisable now; the engine
+computes all 3 periods and Cash Flow across May & Jun. **MIS render + PDF export is M6 (not built).**
+
+## 3. Correctness status — PENDING (UNVERIFIED)
+
+- **§4.5 identity invariants — all PASS on the seeded data** (every period):
+  - TB integrity, Balance-sheet identity — pass Apr/May/Jun.
+  - Cash tie-out (CF closing = BS closing) — pass May & Jun (n/a Apr, first period). The two sides are
+    **independently sourced** (BS cash = stored `cash_bank`; CF closing = opening cash + Δ non-cash accounts).
+  - P&L → equity (opening RE rolls by prior NP) — pass May & Jun.
+- **Perturbation / independence test — PASS:** corrupting Jun `trade_receivables` by +₹50,000 (a non-cash
+  line) breaks the cash tie-out by **exactly ₹50,000** — proving the invariant is live, not a tautology.
+- **Golden fixture — PENDING.** `fixtures/PROPOSED-golden.json` holds the engine's output with **every value
+  UNVERIFIED**. These are **self-authored** numbers; per Bible §10.6 they are NOT correct until a CA reviews
+  them. The CA-checked three-period fixture is an `[INPUT REQUIRED]` (cannot be auto-generated).
+
+## 4. What's stubbed / not done
+
+- **MIS view (template A) + PDF export + source-workbook download** — M6, not started (P0 remaining).
+- **Investor view (B), Cash & runway (C), AR/AP aging UI, compliance calendar** — P1, not started.
+- **In-app analyst provisioning UI / audit-log viewer** — deferred (D-004); admins use `db:seed-admin`.
+- **Startup metrics needing customer/churn data** (CAC, LTV, NRR, churn, ARPA) — return n/a (no inputs).
+- **`xlsx` dependency advisory** — B-002, swap to SheetJS official build before client launch.
+
+## 5. Decisions for Ayush / CA — the CA-VALIDATE list (for Thursday)
+
+> Everything below is a self-authored assumption that needs **CA sign-off** before any real client file.
+> Each `*Paise` value in the fixture is integer paise (÷100 for ₹).
+
+1. **CA-VALIDATE — Cash-flow indirect construction:** capex is reconstructed as `Δ(net depreciable assets) + D&A`
+   — i.e. **no disposals** assumed; **dividends/distributions assumed 0** (no data in v1); tax sits in operating CF.
+2. **CA-VALIDATE — Parenthesis / sign-handling rules (D-006):** a parenthesised/negative value in a debit/credit
+   column is **never auto-moved** between sides; it raises an opt-in proposal. The default reading and the
+   proposal wording need CA sign-off; accepted flips are provisional.
+3. **CA-VALIDATE — P&L other-income placement:** other income placed below EBIT (non-operating), before tax.
+   (Seed = 0 → no effect on these numbers.)
+4. **CA-VALIDATE — Startup metric definitions (Bible §4.4):** burn / MRR / churn definitions vary by model;
+   confirm the client's recurring-revenue definition (MRR currently = `schedule_revenue_detail.is_recurring`).
+5. **D-003 (exercise data) — RE roll & cash residual:** the demo seed's retained-earnings roll and cash-as-balancing-
+   residual make the books articulate; these are exercise numbers, not a fixture.
+6. **`[INPUT REQUIRED]` — The three-period golden-fixture numbers, CA-checked.** This is the blocker for green-
+   lighting correctness: cannot be auto-generated. `PROPOSED-golden.json` is the placeholder until provided.
+7. **`[ADD DETAIL]` — TB upload column format (D-005):** built to `account_code, account_name, debit, credit`
+   (₹, CSV/XLSX) with header-synonym tolerance — confirm against a real client export before locking.
+8. Other open `[ADD DETAIL]` items carried in `DECISIONS.md` (fee model, budgets format, integration priority).
+
+## 6. Blockers
+
+- **Spine / DB:** none. (`BLOCKERS.md` top section clear; B-001 DB pre-flight resolved.)
+- **Known non-spine:** B-002 — `xlsx` advisory (internal/trusted uploads only for now).
+
+## 7. Suggested next-session scope
+
+- **M6 — MIS view (template A) + PDF.** Render the engine output (P&L + BS + cash-flow summary + ratios +
+  MoM trend + editable commentary), PDF export (flaky step — `puppeteer-core` + `@sparticuz/chromium`),
+  source-workbook download. **Keep every statement number marked UNVERIFIED in the UI until CA sign-off.**
+- After CA sign-off Thursday: replace `PROPOSED-golden.json` with the CA-checked `golden-client.json` and
+  assert the engine against it (closes the correctness loop, Bible §10.6).

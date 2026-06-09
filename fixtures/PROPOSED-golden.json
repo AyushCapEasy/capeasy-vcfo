@@ -1,0 +1,377 @@
+{
+  "_meta": {
+    "VERIFICATION": "UNVERIFIED — PENDING CA SIGN-OFF. No value in this file is correct until a CA reviews it.",
+    "client": "Acme Foods Pvt Ltd",
+    "nature": "exercise / demo data (DECISIONS D-003), NOT a CA-authored golden fixture (Bible §10.6)",
+    "units": "all *Paise amounts are integer PAISE — divide by 100 for ₹",
+    "engine": "src/lib/engine (Bible §4)",
+    "generated_by": "scripts/gen-fixture.mts",
+    "periods": [
+      "Apr 2026",
+      "May 2026",
+      "Jun 2026"
+    ]
+  },
+  "integrity": {
+    "all_invariants_pass": true,
+    "perturbation_test": {
+      "description": "Corrupt Jun 2026 trade_receivables by +₹50,000 (a non-cash line). The cash tie-out must break by exactly that amount.",
+      "corruptionPaise": 5000000,
+      "cash_tie_status": "fail",
+      "cash_tie_break_paise": 5000000,
+      "breaks_by_exactly_corruption": true
+    }
+  },
+  "ca_validate": [
+    "RE roll: seed retained-earnings opening rolls on prior-period net profit (DECISIONS D-003) — exercise data.",
+    "Cash residual: seed cash is the balancing plug so the demo books articulate (DECISIONS D-003) — exercise data.",
+    "Parenthesis / sign-handling rules in TB intake are accounting rules, not parsing rules (DECISIONS D-006) — opt-in flips need CA sign-off.",
+    "Cash-flow indirect construction: capex reconstructed as Δ(net depreciable assets) + D&A, i.e. NO DISPOSALS assumed.",
+    "Cash-flow: dividends/distributions assumed 0 (no distribution data in v1); tax-line treatment within operating CF.",
+    "P&L: other-income placed below EBIT (non-operating), before tax (seed has 0 → no effect here).",
+    "Startup metrics: burn / MRR / churn definitions vary by model (Bible §4.4 [VALIDATE]) — confirm per client.",
+    "[INPUT REQUIRED] The three-period golden-fixture numbers, CA-checked — cannot be auto-generated; this file is the PROPOSED placeholder until provided."
+  ],
+  "periods": [
+    {
+      "_verification": "UNVERIFIED — pending CA sign-off",
+      "label": "Apr 2026",
+      "periodMonth": "2026-04-01",
+      "pnl": {
+        "operatingRevenuePaise": 300000000,
+        "otherIncomePaise": 0,
+        "cogsPaise": 120000000,
+        "grossProfitPaise": 180000000,
+        "operatingExpensesPaise": 134000000,
+        "ebitdaPaise": 46000000,
+        "depreciationAmortisationPaise": 10000000,
+        "ebitPaise": 36000000,
+        "financeCostsPaise": 5000000,
+        "ebtPaise": 31000000,
+        "taxPaise": 8750000,
+        "netProfitPaise": 22250000
+      },
+      "balance_sheet": {
+        "currentAssetsPaise": 863500000,
+        "nonCurrentAssetsPaise": 310000000,
+        "totalAssetsPaise": 1173500000,
+        "currentLiabilitiesPaise": 251250000,
+        "nonCurrentLiabilitiesPaise": 240000000,
+        "totalLiabilitiesPaise": 491250000,
+        "shareCapitalPaise": 500000000,
+        "openingRetainedEarningsPaise": 160000000,
+        "netProfitPaise": 22250000,
+        "closingRetainedEarningsPaise": 182250000,
+        "otherEquityPaise": 0,
+        "totalEquityPaise": 682250000,
+        "cashPaise": 513500000
+      },
+      "cash_flow": {
+        "available": false,
+        "reason": "n/a — needs prior period"
+      },
+      "ratios": {
+        "currentRatio": 3.43681592039801,
+        "quickRatio": 2.999004975124378,
+        "grossMarginPct": 60,
+        "ebitdaMarginPct": 15.333333333333332,
+        "netMarginPct": 7.416666666666667,
+        "roePct": 3.261267863686332,
+        "rocePct": 3.9034968826240175,
+        "debtToEquity": 0.46903627702455114,
+        "interestCoverage": 7.2
+      },
+      "working_capital": {
+        "daysInMonth": 30,
+        "dso": 22,
+        "dpo": 33.75,
+        "dio": 27.5,
+        "cashConversionCycle": 15.75
+      },
+      "startup_metrics": {
+        "mrrPaise": 210000000,
+        "arrPaise": 2520000000,
+        "revenueGrowthPct": null,
+        "grossBurnPaise": 267750000,
+        "netBurnPaise": null,
+        "runwayMonths": null,
+        "ruleOf40": null,
+        "notDerivable": [
+          "CAC",
+          "ARPA",
+          "LTV",
+          "LTV:CAC",
+          "CAC payback",
+          "logo churn %",
+          "NRR %"
+        ]
+      },
+      "invariants": [
+        {
+          "id": "tb_integrity",
+          "label": "TB integrity (Σ debits = Σ credits)",
+          "status": "pass",
+          "detail": "Σ debits = Σ credits = 1,54,12,500 (₹).",
+          "deltaPaise": 0
+        },
+        {
+          "id": "bs_identity",
+          "label": "Balance-sheet identity (Assets = Liabilities + Equity)",
+          "status": "pass",
+          "detail": "Assets 1,17,35,000 (₹) = Liab 49,12,500 (₹) + Equity 68,22,500 (₹).",
+          "deltaPaise": 0
+        },
+        {
+          "id": "cash_tie_out",
+          "label": "Cash tie-out (CF closing cash = BS closing cash)",
+          "status": "na",
+          "detail": "n/a — needs prior period."
+        },
+        {
+          "id": "pl_to_equity",
+          "label": "P&L → equity (opening RE rolls by prior net profit)",
+          "status": "na",
+          "detail": "n/a — needs prior period."
+        }
+      ]
+    },
+    {
+      "_verification": "UNVERIFIED — pending CA sign-off",
+      "label": "May 2026",
+      "periodMonth": "2026-05-01",
+      "pnl": {
+        "operatingRevenuePaise": 330000000,
+        "otherIncomePaise": 0,
+        "cogsPaise": 132000000,
+        "grossProfitPaise": 198000000,
+        "operatingExpensesPaise": 142200000,
+        "ebitdaPaise": 55800000,
+        "depreciationAmortisationPaise": 10000000,
+        "ebitPaise": 45800000,
+        "financeCostsPaise": 4800000,
+        "ebtPaise": 41000000,
+        "taxPaise": 11300000,
+        "netProfitPaise": 29700000
+      },
+      "balance_sheet": {
+        "currentAssetsPaise": 871950000,
+        "nonCurrentAssetsPaise": 330000000,
+        "totalAssetsPaise": 1201950000,
+        "currentLiabilitiesPaise": 260000000,
+        "nonCurrentLiabilitiesPaise": 230000000,
+        "totalLiabilitiesPaise": 490000000,
+        "shareCapitalPaise": 500000000,
+        "openingRetainedEarningsPaise": 182250000,
+        "netProfitPaise": 29700000,
+        "closingRetainedEarningsPaise": 211950000,
+        "otherEquityPaise": 0,
+        "totalEquityPaise": 711950000,
+        "cashPaise": 498950000
+      },
+      "cash_flow": {
+        "available": true,
+        "openingCashPaise": 513500000,
+        "cfoPaise": 25450000,
+        "cfiPaise": -30000000,
+        "cffPaise": -10000000,
+        "netChangePaise": -14550000,
+        "closingCashPaise": 498950000,
+        "components": {
+          "netProfitPaise": 29700000,
+          "depreciationAddbackPaise": 10000000,
+          "workingCapitalChangePaise": -14250000,
+          "capexPaise": 30000000,
+          "otherInvestingPaise": 0,
+          "borrowingsChangePaise": -10000000,
+          "equityChangePaise": 0,
+          "dividendsPaise": 0
+        }
+      },
+      "ratios": {
+        "currentRatio": 3.353653846153846,
+        "quickRatio": 2.911346153846154,
+        "grossMarginPct": 60,
+        "ebitdaMarginPct": 16.90909090909091,
+        "netMarginPct": 9,
+        "roePct": 4.1716412669429035,
+        "rocePct": 4.862253835129253,
+        "debtToEquity": 0.43542383594353534,
+        "interestCoverage": 9.541666666666666
+      },
+      "working_capital": {
+        "daysInMonth": 31,
+        "dso": 22.545454545454547,
+        "dpo": 32.878787878787875,
+        "dio": 27.007575757575758,
+        "cashConversionCycle": 16.67424242424243
+      },
+      "startup_metrics": {
+        "mrrPaise": 231000000,
+        "arrPaise": 2772000000,
+        "revenueGrowthPct": 10,
+        "grossBurnPaise": 290300000,
+        "netBurnPaise": 4550000,
+        "runwayMonths": 109.65934065934066,
+        "ruleOf40": 26.90909090909091,
+        "notDerivable": [
+          "CAC",
+          "ARPA",
+          "LTV",
+          "LTV:CAC",
+          "CAC payback",
+          "logo churn %",
+          "NRR %"
+        ]
+      },
+      "invariants": [
+        {
+          "id": "tb_integrity",
+          "label": "TB integrity (Σ debits = Σ credits)",
+          "status": "pass",
+          "detail": "Σ debits = Σ credits = 1,60,22,500 (₹).",
+          "deltaPaise": 0
+        },
+        {
+          "id": "bs_identity",
+          "label": "Balance-sheet identity (Assets = Liabilities + Equity)",
+          "status": "pass",
+          "detail": "Assets 1,20,19,500 (₹) = Liab 49,00,000 (₹) + Equity 71,19,500 (₹).",
+          "deltaPaise": 0
+        },
+        {
+          "id": "cash_tie_out",
+          "label": "Cash tie-out (CF closing cash = BS closing cash)",
+          "status": "pass",
+          "detail": "Both = 49,89,500 (₹) (CF-derived independently of BS cash).",
+          "deltaPaise": 0
+        },
+        {
+          "id": "pl_to_equity",
+          "label": "P&L → equity (opening RE rolls by prior net profit)",
+          "status": "pass",
+          "detail": "Opening RE 18,22,500 (₹) = prior opening 16,00,000 (₹) + prior NP 2,22,500 (₹).",
+          "deltaPaise": 0
+        }
+      ]
+    },
+    {
+      "_verification": "UNVERIFIED — pending CA sign-off",
+      "label": "Jun 2026",
+      "periodMonth": "2026-06-01",
+      "pnl": {
+        "operatingRevenuePaise": 363000000,
+        "otherIncomePaise": 0,
+        "cogsPaise": 145200000,
+        "grossProfitPaise": 217800000,
+        "operatingExpensesPaise": 148500000,
+        "ebitdaPaise": 69300000,
+        "depreciationAmortisationPaise": 10500000,
+        "ebitPaise": 58800000,
+        "financeCostsPaise": 4600000,
+        "ebtPaise": 54200000,
+        "taxPaise": 14675000,
+        "netProfitPaise": 39525000
+      },
+      "balance_sheet": {
+        "currentAssetsPaise": 934975000,
+        "nonCurrentAssetsPaise": 329500000,
+        "totalAssetsPaise": 1264475000,
+        "currentLiabilitiesPaise": 293000000,
+        "nonCurrentLiabilitiesPaise": 220000000,
+        "totalLiabilitiesPaise": 513000000,
+        "shareCapitalPaise": 500000000,
+        "openingRetainedEarningsPaise": 211950000,
+        "netProfitPaise": 39525000,
+        "closingRetainedEarningsPaise": 251475000,
+        "otherEquityPaise": 0,
+        "totalEquityPaise": 751475000,
+        "cashPaise": 536975000
+      },
+      "cash_flow": {
+        "available": true,
+        "openingCashPaise": 498950000,
+        "cfoPaise": 38025000,
+        "cfiPaise": -10000000,
+        "cffPaise": 10000000,
+        "netChangePaise": 38025000,
+        "closingCashPaise": 536975000,
+        "components": {
+          "netProfitPaise": 39525000,
+          "depreciationAddbackPaise": 10500000,
+          "workingCapitalChangePaise": -12000000,
+          "capexPaise": 10000000,
+          "otherInvestingPaise": 0,
+          "borrowingsChangePaise": 10000000,
+          "equityChangePaise": 0,
+          "dividendsPaise": 0
+        }
+      },
+      "ratios": {
+        "currentRatio": 3.1910409556313994,
+        "quickRatio": 2.781484641638225,
+        "grossMarginPct": 60,
+        "ebitdaMarginPct": 19.090909090909093,
+        "netMarginPct": 10.888429752066116,
+        "roePct": 5.2596560098473,
+        "rocePct": 6.0526518953138275,
+        "debtToEquity": 0.4258292025682824,
+        "interestCoverage": 12.782608695652174
+      },
+      "working_capital": {
+        "daysInMonth": 30,
+        "dso": 21.487603305785125,
+        "dpo": 30.57851239669422,
+        "dio": 24.793388429752067,
+        "cashConversionCycle": 15.702479338842974
+      },
+      "startup_metrics": {
+        "mrrPaise": 254100000,
+        "arrPaise": 3049200000,
+        "revenueGrowthPct": 10,
+        "grossBurnPaise": 312975000,
+        "netBurnPaise": -28025000,
+        "runwayMonths": null,
+        "ruleOf40": 29.090909090909093,
+        "notDerivable": [
+          "CAC",
+          "ARPA",
+          "LTV",
+          "LTV:CAC",
+          "CAC payback",
+          "logo churn %",
+          "NRR %"
+        ]
+      },
+      "invariants": [
+        {
+          "id": "tb_integrity",
+          "label": "TB integrity (Σ debits = Σ credits)",
+          "status": "pass",
+          "detail": "Σ debits = Σ credits = 1,69,84,500 (₹).",
+          "deltaPaise": 0
+        },
+        {
+          "id": "bs_identity",
+          "label": "Balance-sheet identity (Assets = Liabilities + Equity)",
+          "status": "pass",
+          "detail": "Assets 1,26,44,750 (₹) = Liab 51,30,000 (₹) + Equity 75,14,750 (₹).",
+          "deltaPaise": 0
+        },
+        {
+          "id": "cash_tie_out",
+          "label": "Cash tie-out (CF closing cash = BS closing cash)",
+          "status": "pass",
+          "detail": "Both = 53,69,750 (₹) (CF-derived independently of BS cash).",
+          "deltaPaise": 0
+        },
+        {
+          "id": "pl_to_equity",
+          "label": "P&L → equity (opening RE rolls by prior net profit)",
+          "status": "pass",
+          "detail": "Opening RE 21,19,500 (₹) = prior opening 18,22,500 (₹) + prior NP 2,97,000 (₹).",
+          "deltaPaise": 0
+        }
+      ]
+    }
+  ]
+}
