@@ -162,6 +162,18 @@
   auditable files — never in an external/agent-private store. (A prior copy of this rule mistakenly written to
   Claude Code's out-of-repo memory store has been deleted; this entry replaces it.)
 
+### D-010 · Vercel CLI/API access uses a project-scoped token only (never account-wide)
+- **Date:** 2026-06-09 · **Operator-directed** · **PERMANENT standing rule.**
+- **Rule:** If/when Vercel CLI or API access is ever needed for automation, create an access token
+  **scoped to the `capeasy-vcfo` project only** — **never** an account-wide or team-wide token. Such a token
+  is a secret → it lives only in a gitignored env file, never committed, printed, or pasted in chat (D-009).
+- **Context:** The first Preview deploy used **no token** — the two `NEXT_PUBLIC_*` env vars were added via
+  the Vercel dashboard (Path A), and `main` is pushed via the existing GitHub credentials.
+- **Live deploy posture confirmed (2026-06-09):** Vercel Authentication = **All Deployments** (verified in
+  incognito → redirects to Vercel login), Production Branch = **`production`** (so `main` = Preview only),
+  Vercel env = **only** `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` on Production + Preview;
+  `VCFO_WATERMARK_OFF` unset (watermark on). See D-008.
+
 ---
 
 ## OPEN — needs Ayush ([ADD DETAIL]) — carried from Bible §11
