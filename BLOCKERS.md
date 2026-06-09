@@ -31,10 +31,16 @@ _(none — B-001 resolved 2026-06-08; see below)_
 - **Resolution (2026-06-08):** Operator saved the real `capeasy-vcfo` secrets into THIS `.env.local`
   (anon key, service_role key, and `DATABASE_URL` password). `npm install pg` →
   `node scripts/db-preflight.mjs` exited **0**: CONNECTED to `capeasy-vcfo` (ref `rsaztdwxrzgyxkvxrqrt`),
-  PostgreSQL **17.6**, database `postgres`. Note: the DB password contains a literal `@`
-  (`‹redacted-history-purge›`); it parsed correctly because the URL spec uses the LAST `@` as the
+  PostgreSQL **17.6**, database `postgres`. Note: the DB password contained a literal `@`
+  (`‹redacted 2026-06-09›`); it parsed correctly because the URL spec uses the LAST `@` as the
   user/host delimiter and modern `pg` re-encodes via `new URL` — no edit to the connection string needed.
   M0.5 gate is GREEN; M1 unblocked.
+  > ⚠️ **SECURITY (2026-06-09):** the literal DB password had been written here verbatim and was committed
+  > in local git history (commit `948f6db`, never pushed to GitHub). **Action required before any deploy:**
+  > rotate the Supabase database password (Dashboard → Project Settings → Database → Reset), update
+  > `DATABASE_URL` in `.env.local` only. The deployed app does NOT use `DATABASE_URL` (supabase-js + anon
+  > key only), so the rotated value never needs to reach Vercel. Optionally purge it from local history
+  > before the first push (history has not left this machine).
 - **Milestone:** M0.5 (mandatory gate; blocks M1 and the entire spine M1→M3→M5→M6).
 - **What's stuck:** `.env.local` was scaffolded at M0 with **placeholder** secrets
   (`NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL` password all = `REPLACE_*`).
