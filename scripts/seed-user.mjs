@@ -5,18 +5,23 @@
 // Roles: 'admin' or 'analyst' ONLY. There is no "client" role — "clients" are the orgs/tenants
 // (Acme, Globex). For a demo/showing account use --role analyst.
 //
-// The password is entered via a HIDDEN interactive prompt (never echoed) and recorded ONLY in the
-// gitignored .admin-credentials.local (D-009) — never stdout, .env.local, chat, or a commit.
+// The password is set via a HIDDEN interactive prompt (default) OR generated with --generate
+// (strong random, no prompt). Either way it is recorded ONLY in the gitignored
+// .admin-credentials.local (D-009) — never stdout, .env.local, chat, or a commit.
 //
 // Guardrail (Build Plan §3): operates ONLY on project rsaztdwxrzgyxkvxrqrt (dev/demo, D-007) —
 // both DATABASE_URL (via _env) and NEXT_PUBLIC_SUPABASE_URL are checked against the one ref.
 //
-// Usage (run in YOUR terminal — the hidden prompt needs a TTY):
-//   node scripts/seed-user.mjs <email> --role <admin|analyst> --org <"Legal Name"|all> [--name "Full Name"]
+// Usage:
+//   node scripts/seed-user.mjs <email> --role <admin|analyst> --org <"Legal Name"|all> [--name "Full Name"] [--generate]
+//   - default     : HIDDEN prompt for the password (needs a TTY — run in your own terminal)
+//   - --generate  : strong random password, no prompt (recorded in .admin-credentials.local)
 // Examples:
 //   node scripts/seed-user.mjs demo@capeasy.in  --role analyst --org "Acme Foods Pvt Ltd"
+//   node scripts/seed-user.mjs demo@capeasy.in  --role analyst --org "Acme Foods Pvt Ltd" --generate
 //   node scripts/seed-user.mjs admin@capeasy.in --role admin   --org all
 // Idempotent: re-running an existing email updates its password + role/membership.
+import { randomBytes } from 'node:crypto';
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
@@ -24,16 +29,17 @@ import readline from 'node:readline';
 import { loadEnv, REF } from './_env.mjs';
 
 const CRED_PATH = resolve(dirname(fileURLToPath(import.meta.url)), '..', '.admin-credentials.local');
-const USAGE = 'Usage: node scripts/seed-user.mjs <email> --role <admin|analyst> --org <"Legal Name"|all> [--name "Full Name"]';
+const USAGE = 'Usage: node scripts/seed-user.mjs <email> --role <admin|analyst> --org <"Legal Name"|all> [--name "Full Name"] [--generate]';
 
 // --- arg parsing ----------------------------------------------------------
 const argv = process.argv.slice(2);
-let email, role = 'analyst', org, name;
+let email, role = 'analyst', org, name, generate = false;
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (a === '--role') role = (argv[++i] || '').toLowerCase();
   else if (a === '--org') org = argv[++i];
   else if (a === '--name') name = argv[++i];
+  else if (a === '--generate') generate = true;
   else if (!a.startsWith('--') && !email) email = a.toLowerCase();
   else { console.error('Unexpected arg: ' + a + '\n' + USAGE); process.exit(2); }
 }
@@ -56,14 +62,22 @@ function promptHidden(query) {
     rl.question('', (ans) => { rl.close(); process.stdout.write('\n'); res(ans); });
   });
 }
-if (!process.stdin.isTTY) {
-  console.error('BLOCKED — password must be typed interactively. Run this directly in your terminal (not piped/CI).');
-  process.exit(2);
+let pw1;
+if (generate) {
+  // Strong random password. base64url is [A-Za-z0-9_-]; the Cap- prefix / -7! suffix guarantee
+  // upper+lower+digit+symbol. Recorded ONLY in .admin-credentials.local — its value is never echoed.
+  pw1 = 'Cap-' + randomBytes(18).toString('base64url') + '-7!';
+  console.log('  (--generate) strong random password created — recorded only in .admin-credentials.local, not shown.');
+} else {
+  if (!process.stdin.isTTY) {
+    console.error('BLOCKED — type the password interactively, or pass --generate. Run this in your terminal (not piped/CI).');
+    process.exit(2);
+  }
+  pw1 = await promptHidden(`Set password for ${email} (${role}) — hidden: `);
+  const pw2 = await promptHidden('Confirm password — hidden: ');
+  if (pw1 !== pw2) { console.error('Passwords do not match. Aborted — nothing changed.'); process.exit(1); }
+  if (pw1.length < 10) { console.error('Password too short (min 10 chars). Aborted — nothing changed.'); process.exit(1); }
 }
-const pw1 = await promptHidden(`Set password for ${email} (${role}) — hidden: `);
-const pw2 = await promptHidden('Confirm password — hidden: ');
-if (pw1 !== pw2) { console.error('Passwords do not match. Aborted — nothing changed.'); process.exit(1); }
-if (pw1.length < 10) { console.error('Password too short (min 10 chars). Aborted — nothing changed.'); process.exit(1); }
 
 // --- create (or find + reset) the auth user -------------------------------
 const { createClient } = await import('@supabase/supabase-js');
