@@ -60,13 +60,15 @@
 - **Context:** v1 is internal, not self-serve (Build Plan §1, §6). Real email is mocked in v1, so
   magic-link / email-invite flows can't actually send. Internal staff still need accounts.
 - **Decision:** No public `/signup` route. Accounts are admin-provisioned. The **first admin**
-  (`ayush@capeasy.in`) is bootstrapped by `scripts/seed-admin.mjs` (Supabase Auth Admin API via the
+  (`ayush@capeasy.in`) is bootstrapped by `scripts/seed-user.mjs` (renamed/generalized from
+  `seed-admin.mjs` — see D-011) (Supabase Auth Admin API via the
   service_role key, server-side only) with a **random temp password disclosed once** in the script
   output — change on first login. Migration `0006_profile_on_signup.sql` auto-creates a `public.profiles`
   row for every `auth.users` insert, so seeded and future in-app users are uniform. The admin is added
   as an admin-member of every existing client org so RLS grants visibility.
 - **Deferred:** the in-app UI for an admin to create/invite analysts and assign roles. Until it exists,
-  add analysts by running `node scripts/seed-admin.mjs <email>` (then grant org membership). Also deferred:
+  add users by running `node scripts/seed-user.mjs <email> --role <admin|analyst> --org <"Legal Name"|all>`
+  (membership is granted by the script via `--org`; see D-011). Also deferred:
   an audit-log viewer (writes already happen on login/logout).
 - **Reversible?** Yes — auth model is app-level; switching to open signup later is a route + policy change.
 
@@ -199,6 +201,22 @@
   incognito → redirects to Vercel login), Production Branch = **`production`** (so `main` = Preview only),
   Vercel env = **only** `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` on Production + Preview;
   `VCFO_WATERMARK_OFF` unset (watermark on). See D-008.
+
+### D-011 · `seed-admin.mjs` → `seed-user.mjs` — provision any role to any org; operator-set passwords
+- **Date:** 2026-06-10 · **Operator-directed.**
+- **Rename:** `scripts/seed-admin.mjs` → **`scripts/seed-user.mjs`** (it no longer only seeds admins); npm script
+  `db:seed-admin` → **`db:seed-user`**. Operational references (D-004, MORNING-REVIEW) updated; the dated **M2
+  milestone log in the Build Plan is left as historical record** (the old name was accurate then).
+- **New flags:** `--role <admin|analyst>` (the **only** two roles — there is no "client" role; "clients" = the
+  orgs/tenants) and `--org <"Legal Name"|all>` (grants membership at that role to one named org or every org).
+  Defaults: `--role analyst` (least privilege); `--org` is required.
+- **Password mechanism changed (D-009):** instead of auto-generating a temp password, the operator now **types it
+  via a hidden, no-echo prompt** (real TTY required; confirmed twice; min 10 chars). Recorded **only** in
+  `.admin-credentials.local` (per-email block, upsert on re-run) — never stdout, `.env.local`, chat, or a commit.
+- **First use (operator-confirmed):** `demo@capeasy.in` = **analyst @ Acme Foods Pvt Ltd only** (the 3-period demo;
+  not Globex). `ayush@capeasy.in` stays the admin (kept, not replaced). A second generic `admin@capeasy.in` is
+  **NOT** created unless explicitly requested.
+- **Reversible?** Yes — script + docs only; the auth/role model (D-004) is unchanged.
 
 ---
 

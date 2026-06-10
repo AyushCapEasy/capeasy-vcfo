@@ -15,7 +15,7 @@ _Build state: M0 → M5 green. M6 (MIS view + PDF) not started. Stopped at M5 pe
 npm install
 npm run dev            # http://localhost:3000  (redirects to /login)
 ```
-- **Login:** `ayush@capeasy.in` — password is in the gitignored `.admin-credentials.local` (run `npm run db:seed-admin` to reset). Change it on first login.
+- **Login:** `ayush@capeasy.in` — password is in the gitignored `.admin-credentials.local` (reset with `node scripts/seed-user.mjs ayush@capeasy.in --role admin --org all`; see D-011). Change it on first login.
 - **Demo client:** **Acme Foods Pvt Ltd** → 3 chained periods **Apr (locked) → May (reviewed) → Jun (draft)**. Open a period to exercise intake.
 - **Engine / correctness (headless):**
   ```bash
@@ -58,7 +58,7 @@ the SAMPLE watermark; every number is UNVERIFIED.**
 
 - **P0 is complete** (foundation → intake → engine → MIS pack + PDF). All numbers remain UNVERIFIED.
 - **Investor view (B), Cash & runway (C), AR/AP aging UI, compliance calendar** — P1, not started.
-- **In-app analyst provisioning UI / audit-log viewer** — deferred (D-004); admins use `db:seed-admin`.
+- **In-app analyst provisioning UI / audit-log viewer** — deferred (D-004); admins use `scripts/seed-user.mjs` (D-011).
 - **Startup metrics needing customer/churn data** (CAC, LTV, NRR, churn, ARPA) — return n/a (no inputs).
 - **`xlsx` dependency advisory** — B-002, swap to SheetJS official build before client launch.
 
