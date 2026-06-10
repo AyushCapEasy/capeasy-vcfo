@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "VERIFICATION": "UNVERIFIED — PENDING CA SIGN-OFF. No value in this file is correct until a CA reviews it.",
+    "VERIFICATION": "CONSISTENCY-CHECKED — clears the §4.5 identity battery (M-verify a). NOT VERIFIED: the word 'VERIFIED' requires the one-time human RULE-REVIEW.md (M-verify c, deferred). Watermark stays ON.",
     "client": "Acme Foods Pvt Ltd",
     "nature": "exercise / demo data (DECISIONS D-003), NOT a CA-authored golden fixture (Bible §10.6)",
     "units": "all *Paise amounts are integer PAISE — divide by 100 for ₹",
@@ -30,7 +30,7 @@
     "Cash-flow: dividends/distributions assumed 0 (no distribution data in v1); tax-line treatment within operating CF.",
     "P&L: other-income placed below EBIT (non-operating), before tax (seed has 0 → no effect here).",
     "Startup metrics: burn / MRR / churn definitions vary by model (Bible §4.4 [VALIDATE]) — confirm per client.",
-    "[INPUT REQUIRED] The three-period golden-fixture numbers, CA-checked — cannot be auto-generated; this file is the PROPOSED placeholder until provided.",
+    "[SUPERSEDED] The per-client CA golden-fixture diff is RETIRED — the self-serve pivot (Vision §1) removed per-client human sign-off. Engine correctness is now: identity battery (M-verify a, PASS across 16 adversarial cases) + multi-AI bug-finder (M-verify b, consistency-check only) + one-time human RULE-REVIEW.md (M-verify c, deferred — the live human gate for VERIFIED). See vCFO-DevDoc-DecisionEngine.md.",
     "[CA-VALIDATE · M7 Tier-1 observations] Notability thresholds (src/lib/insight/observations.ts OBSERVATION_THRESHOLDS) decide which period-over-period moves surface as 'Observations': marginMovePp=1.0pp (gross/EBITDA/net margin, ROE/ROCE, expense ratios), ratioMovePct=10% (current/quick, D/E, interest coverage), revenueNetProfitMovePct=10%, workingCapitalMoveDays=2 (DSO/DPO/DIO/CCC), burnRunwayMovePct=10%. CA tunes 'what counts as notable' alongside the golden fixture. Observations themselves are true-by-construction restatements of these (UNVERIFIED) engine fields — no interpretation.",
     "[CA-VALIDATE · M8 Tier-2 diagnosis rules] Each is an INTERPRETATION (which driver dominates) the CA must sign off; figures are exact functions of engine fields. Rules (src/lib/insight/diagnoses.ts DIAGNOSIS_RULES): DIAG.margin_bridge, DIAG.revenue_line, DIAG.net_profit_bridge, DIAG.ratio_nd_bridge, DIAG.ratio_unavailable, DIAG.working_capital_factors, DIAG.ccc_components, DIAG.expense_ratio_bridge, DIAG.burn_bridge, DIAG.runway_bridge.",
     "[CA-VALIDATE · M8 Tier-3 recommendation rules] Advice with quantified impact (exact counterfactual arithmetic on engine figures) the CA must sign off. Rules (src/lib/insight/recommendations.ts RECOMMENDATION_RULES): REC.dso_cash_release, REC.dio_cash_release, REC.dpo_cash_defer, REC.opex_ratio_savings, REC.cogs_ratio_savings, REC.runway_watch.",
@@ -39,7 +39,7 @@
   ],
   "periods": [
     {
-      "_verification": "UNVERIFIED — pending CA sign-off",
+      "_verification": "CONSISTENCY-CHECKED (identity battery) — NOT VERIFIED (pending one-time CA rule-review)",
       "label": "Apr 2026",
       "periodMonth": "2026-04-01",
       "pnl": {
@@ -141,7 +141,7 @@
       ]
     },
     {
-      "_verification": "UNVERIFIED — pending CA sign-off",
+      "_verification": "CONSISTENCY-CHECKED (identity battery) — NOT VERIFIED (pending one-time CA rule-review)",
       "label": "May 2026",
       "periodMonth": "2026-05-01",
       "pnl": {
@@ -260,7 +260,7 @@
       ]
     },
     {
-      "_verification": "UNVERIFIED — pending CA sign-off",
+      "_verification": "CONSISTENCY-CHECKED (identity battery) — NOT VERIFIED (pending one-time CA rule-review)",
       "label": "Jun 2026",
       "periodMonth": "2026-06-01",
       "pnl": {

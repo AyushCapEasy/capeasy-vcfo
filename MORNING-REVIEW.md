@@ -1,18 +1,22 @@
 # MORNING REVIEW — vCFO MIS Engine
 
-> 🔴 **#1 OPEN BLOCKER — M7.5: CA GOLDEN-FIXTURE DIFF (pending CA figures).** The CA hand-computed Acme's
-> 3-period P&L/BS/CF and (per operator) they matched the engine — but it is **NOT recorded yet**. Enter her
-> figures into `fixtures/golden-client.json` (vessel created, null slots), diff field-by-field vs the engine,
-> and flip the fixture to **VERIFIED only on a full exact match** (mismatches are engine bugs). **Until this
-> gate is green, NOTHING client-facing proceeds:** `VCFO_WATERMARK_OFF` stays unset, the watermark stays ON,
-> no client-facing surface ships.
+> 🔴 **#1 OPEN BLOCKER — M-verify (c): the one-time human RULE-REVIEW (deferred, not removed).** Engine
+> correctness now rests on three things (Vision §5): the **identity battery — PASS** across 16 adversarial
+> cases (M-verify a, `src/lib/engine/identity-battery.test.ts`); the **multi-AI bug-finder** harness
+> (M-verify b, consistency-check only — never a correctness certificate); and a **one-time CA review of the
+> judgment-call RULES** (`RULE-REVIEW.md`) — the part no identity test or AI consensus can replace. Until a CA
+> works `RULE-REVIEW.md` and ticks the verdicts, **NOTHING is VERIFIED and NOTHING client-facing proceeds:**
+> `VCFO_WATERMARK_OFF` stays unset, the watermark stays ON, no client-facing surface ships.
+> *(The old per-client Acme golden-fixture diff / `golden-client.json` is RETIRED — the self-serve pivot
+> removed per-client sign-off; the rule-review is the human gate now. See vCFO-DevDoc-DecisionEngine.md.)*
 >
-> ⛔ **GOLDEN FIXTURE PENDING CA SIGN-OFF.** Every computed number is **UNVERIFIED** — `fixtures/PROPOSED-golden.json`
-> (all values UNVERIFIED) + the demo `database` numbers are **exercise data**, not CA-checked. **No statement
-> number is "correct" or client-visible until the CA signs off** (Bible §10.6). CA-VALIDATE list in §5 (now also
-> includes the M7 observation thresholds, mirrored into `ca_validate`).
+> ✅ **CONSISTENCY-CHECKED, not VERIFIED.** Engine statements clear the §4.5 identity battery → labelled
+> **CONSISTENCY-CHECKED** (`fixtures/PROPOSED-golden.json`). The insight layer (Tiers 1–3) + accounting
+> conventions remain **not-yet-VERIFIED pending the rule-review**; demo `database` numbers are exercise data
+> (D-007). **No number is "VERIFIED" until it clears the identity battery AND the rule-review** (Bible §10.6 /
+> Vision §5). The judgment-call register is now `RULE-REVIEW.md` (engine conventions + every diagnosis/recommendation rule).
 
-_Build state: M0 → M8 green (Tiers 1–3 insight layer, built on the UNVERIFIED engine). 🔴 M-verify (CA golden-fixture diff) is the #1 open blocker. ⚠️ Tiers 2 & 3 (diagnoses / recommendations / goals) are interpretation & advice computed on UNVERIFIED numbers — re-validate every one against the engine after the CA diff. Watermark ON._
+_Build state: M0 → M8 green; **M-verify (a) identity battery PASS + (b) bug-finder harness + (c) RULE-REVIEW.md built** — engine CONSISTENCY-CHECKED. 🔴 #1 open gate = the one-time CA rule-review (`RULE-REVIEW.md`). ⚠️ Tiers 1–3 are built on not-yet-VERIFIED numbers — re-validate after the rule-review. Watermark ON._
 
 ---
 

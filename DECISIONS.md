@@ -231,6 +231,13 @@
   a client surface.
 - **Reversible?** Yes — swap `GOALS_STUB` for a real per-org targets source; the tracking logic is unchanged.
 
+### D-013 · Verification model redefined (self-serve pivot) — per-client golden-diff retired; rule-review is the human gate
+- **Date:** 2026-06-10 · **Operator-confirmed (both flags)** · governs verification from here. Sources: `vCFO-Long-Term-Vision.md` §5 (non-negotiable) + `vCFO-DevDoc-DecisionEngine.md` (now tracked in-repo).
+- **Context:** the product pivoted to **self-serve MIS** (no per-client analyst/CA in the loop), so the *engine's own correctness* — not a per-client sign-off — is the basis for trust.
+- **Decision:** **RETIRE** the per-client CA golden-fixture diff and its artifacts — `fixtures/golden-client.json` **deleted**, the M7.5 gate marked **SUPERSEDED**, MORNING-REVIEW reframed. Engine correctness is now: **(a)** identity battery (pass/fail, adversarial — true by definition) + **(b)** multi-AI cross-check (**BUG-FINDER ONLY**; agreement reduces variance not bias — never a correctness certificate) + **(c)** a **one-time human RULE-REVIEW** of the judgment-call rules. **The rule-review is DEFERRED, not removed — it remains the mandatory human gate for the word VERIFIED, and AI consensus can never replace it** (Vision §5).
+- **Labelling:** engine output that clears (a) is **CONSISTENCY-CHECKED**; **VERIFIED** is reserved for what ALSO clears (c). Watermark stays **ON** (off-switch deliberate, never default). Tiers 1–3 (M8) are built on not-yet-VERIFIED numbers and must be re-validated after the rule-review.
+- **Reversible?** The pivot is a Vision-level direction; the new artifacts (battery, harness, `RULE-REVIEW.md`) are additive. Reinstating a per-client diff would require an explicit re-pivot.
+
 ---
 
 ## OPEN — needs Ayush ([ADD DETAIL]) — carried from Bible §11
