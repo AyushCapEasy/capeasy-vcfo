@@ -30,7 +30,8 @@
     "Cash-flow: dividends/distributions assumed 0 (no distribution data in v1); tax-line treatment within operating CF.",
     "P&L: other-income placed below EBIT (non-operating), before tax (seed has 0 → no effect here).",
     "Startup metrics: burn / MRR / churn definitions vary by model (Bible §4.4 [VALIDATE]) — confirm per client.",
-    "[INPUT REQUIRED] The three-period golden-fixture numbers, CA-checked — cannot be auto-generated; this file is the PROPOSED placeholder until provided."
+    "[INPUT REQUIRED] The three-period golden-fixture numbers, CA-checked — cannot be auto-generated; this file is the PROPOSED placeholder until provided.",
+    "[CA-VALIDATE · M7 Tier-1 observations] Notability thresholds (src/lib/insight/observations.ts OBSERVATION_THRESHOLDS) decide which period-over-period moves surface as 'Observations': marginMovePp=1.0pp (gross/EBITDA/net margin, ROE/ROCE, expense ratios), ratioMovePct=10% (current/quick, D/E, interest coverage), revenueNetProfitMovePct=10%, workingCapitalMoveDays=2 (DSO/DPO/DIO/CCC), burnRunwayMovePct=10%. CA tunes 'what counts as notable' alongside the golden fixture. Observations themselves are true-by-construction restatements of these (UNVERIFIED) engine fields — no interpretation."
   ],
   "periods": [
     {

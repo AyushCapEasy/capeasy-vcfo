@@ -4,6 +4,7 @@
 // across every page. puppeteer renders this with printBackground:true so the watermark + fills show.
 import type { MisChain } from '@/lib/engine/mis-data';
 import { pnlRows, bsAssetRows, bsLiabEquityRows, cfRows, ratioCards, kpis, trendSeries, inr, type StmtRow } from './present';
+import { computeObservations } from '../insight/observations';
 import { WATERMARK_ENABLED, WATERMARK_TEXT } from '../watermark';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
@@ -40,6 +41,7 @@ export function buildMisPrintHtml(chain: MisChain, selectedIdx: number): string 
   const k = kpis(chain.results, selectedIdx);
   const cf = cfRows(result);
   const trends = trendSeries(chain.results);
+  const observations = computeObservations(chain.results).filter((o) => o.periodsCompared[1] === periodMeta.label);
 
   const watermarkTile = WATERMARK_ENABLED
     ? `<svg xmlns='http://www.w3.org/2000/svg' width='460' height='300'><text x='10' y='160' transform='rotate(-28 230 150)' font-family='Inter, Segoe UI, sans-serif' font-size='19' font-weight='700' fill='rgba(30,79,168,0.12)'>${WATERMARK_TEXT}</text></svg>`
@@ -65,6 +67,12 @@ export function buildMisPrintHtml(chain: MisChain, selectedIdx: number): string 
     : `<p class="muted pad">n/a — needs a prior period (first period in the chain).</p>`;
 
   const commentary = periodMeta.commentary ? `<div class="card"><h3>Analyst commentary</h3><p class="comment">${esc(periodMeta.commentary)}</p></div>` : '';
+
+  const obsHtml = observations.length
+    ? `<table class="stmt">${observations
+        .map((o) => `<tr class="line"><td>${esc(o.statement)}<span class="note"> · traces: ${esc([...new Set(o.traces.map((t) => t.enginePath))].join(', '))}</span></td></tr>`)
+        .join('')}</table>`
+    : `<p class="muted pad">No period-over-period move cleared the notability thresholds for this period.</p>`;
 
   return `<!doctype html><html><head><meta charset="utf-8"/><style>
   @page { size: A4; margin: 14mm 12mm; }
@@ -120,6 +128,7 @@ export function buildMisPrintHtml(chain: MisChain, selectedIdx: number): string 
       <div class="card"><h3>Balance Sheet</h3><table class="stmt">${stmt(bsAssetRows(result))}<tr><td colspan="2" style="height:4px;background:#f1f5f9"></td></tr>${stmt(bsLiabEquityRows(result))}</table></div>
     </div>
     <div class="card"><h3>Cash Flow — indirect</h3>${cfHtml}</div>
+    <div class="card"><h3>Observations <span class="badge">Tier 1 · UNVERIFIED</span></h3>${obsHtml}</div>
     <div class="card"><h3>Key ratios &amp; working capital</h3><div class="ratios">${ratioHtml}</div></div>
     <div class="card"><h3>Month-on-month trend</h3><div class="trends">${trendHtml}</div></div>
     ${commentary}

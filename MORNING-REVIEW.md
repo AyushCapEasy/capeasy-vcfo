@@ -1,11 +1,18 @@
 # MORNING REVIEW — vCFO MIS Engine
 
-> ⛔ **GOLDEN FIXTURE PENDING AYUSH/CA SIGN-OFF.** Every computed number is **UNVERIFIED**. The engine's
-> output is in `fixtures/PROPOSED-golden.json` (all values UNVERIFIED) and `database` demo numbers are
-> **exercise data**, not CA-checked. **No statement number is "correct" or client-visible until the CA
-> signs off** (Bible §10.6). The CA-VALIDATE list for Thursday is in §5 below.
+> 🔴 **#1 OPEN BLOCKER — M7.5: CA GOLDEN-FIXTURE DIFF (pending CA figures).** The CA hand-computed Acme's
+> 3-period P&L/BS/CF and (per operator) they matched the engine — but it is **NOT recorded yet**. Enter her
+> figures into `fixtures/golden-client.json` (vessel created, null slots), diff field-by-field vs the engine,
+> and flip the fixture to **VERIFIED only on a full exact match** (mismatches are engine bugs). **Until this
+> gate is green, NOTHING client-facing proceeds:** `VCFO_WATERMARK_OFF` stays unset, the watermark stays ON,
+> no client-facing surface ships.
+>
+> ⛔ **GOLDEN FIXTURE PENDING CA SIGN-OFF.** Every computed number is **UNVERIFIED** — `fixtures/PROPOSED-golden.json`
+> (all values UNVERIFIED) + the demo `database` numbers are **exercise data**, not CA-checked. **No statement
+> number is "correct" or client-visible until the CA signs off** (Bible §10.6). CA-VALIDATE list in §5 (now also
+> includes the M7 observation thresholds, mirrored into `ca_validate`).
 
-_Build state: M0 → M5 green. M6 (MIS view + PDF) not started. Stopped at M5 per operator instruction._
+_Build state: M0 → M7 green (engine output still UNVERIFIED; M7 = Tier-1 observations, no interpretation). 🔴 M7.5 CA golden-fixture diff is the open blocker. Watermark ON._
 
 ---
 

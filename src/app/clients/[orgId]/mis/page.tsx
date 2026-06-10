@@ -9,6 +9,7 @@ import { getMisChain, getPeriodDrilldown, type DrilldownLine } from '@/lib/engin
 import {
   pnlRows, bsAssetRows, bsLiabEquityRows, cfRows, ratioCards, kpis, trendSeries, inr, type StmtRow,
 } from '@/lib/mis/present';
+import { computeObservations, GROUP_CODES, type Observation } from '@/lib/insight/observations';
 import { Watermark, StatusRibbon } from './watermark';
 import { Sparkline } from './sparkline';
 import { Commentary } from './commentary';
@@ -93,6 +94,45 @@ function StatementBlock({ rows, drilldown }: { rows: StmtRow[]; drilldown: Recor
   );
 }
 
+// Tier 1 observations (M7) into the selected period, with reuse of the existing by-code drill-down.
+function ObservationsBlock({ observations, drilldown }: { observations: Observation[]; drilldown: Record<string, DrilldownLine[]> }) {
+  if (!observations.length) {
+    return <p className="px-4 py-6 text-sm text-slate-400">No period-over-period move cleared the notability thresholds for this period (or it is the first period). Nothing is fabricated — honest silence.</p>;
+  }
+  return (
+    <div className="divide-y divide-slate-100">
+      {observations.map((o) => {
+        const codes = [...new Set(o.traces.flatMap((t) => t.categoryGroups).flatMap((g) => GROUP_CODES[g]))];
+        const accounts = codes.flatMap((c) => drilldown[c] ?? []);
+        const enginePaths = [...new Set(o.traces.map((t) => t.enginePath))];
+        return (
+          <details key={o.id} className="group">
+            <summary className="flex cursor-pointer list-none items-start gap-2 px-4 py-2.5 text-sm hover:bg-slate-50">
+              <svg className="mt-0.5 h-3 w-3 shrink-0 text-slate-400 transition-transform group-open:rotate-90" viewBox="0 0 12 12"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
+              <span className="flex-1 text-slate-700">{o.statement}</span>
+              <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-slate-500 uppercase">{o.status}</span>
+            </summary>
+            <div className="space-y-1 bg-slate-50/60 px-4 pb-3 pl-9 text-xs text-slate-500">
+              <p>
+                Traces to engine field{enginePaths.length > 1 ? 's' : ''}:{' '}
+                {enginePaths.map((p) => <code key={p} className="mr-1 rounded bg-white px-1 py-0.5 text-[11px] text-slate-600">{p}</code>)}
+                <span className="text-slate-400"> · unverified</span>
+              </p>
+              {accounts.length ? (
+                <table className="w-full"><tbody>
+                  {accounts.map((a) => (
+                    <tr key={a.code}><td className="py-0.5">{a.code} · {a.name}</td><td className="tnum py-0.5 pl-4 text-right whitespace-nowrap">{a.debitPaise ? `${inr(a.debitPaise)} Dr` : `${inr(a.creditPaise)} Cr`}</td></tr>
+                  ))}
+                </tbody></table>
+              ) : <p className="text-slate-400">No mapped source accounts for these lines in this period.</p>}
+            </div>
+          </details>
+        );
+      })}
+    </div>
+  );
+}
+
 export default async function MisPage({ params, searchParams }: { params: Promise<{ orgId: string }>; searchParams: Promise<{ p?: string }> }) {
   const { orgId } = await params;
   const { p } = await searchParams;
@@ -117,6 +157,8 @@ export default async function MisPage({ params, searchParams }: { params: Promis
   const periodMeta = chain.periods[selectedIdx];
   const result = chain.results[selectedIdx];
   const drilldown = await getPeriodDrilldown(periodMeta.id);
+  // M7 Tier 1: deterministic observations for the move INTO the selected period (vs its prior).
+  const observations = computeObservations(chain.results).filter((o) => o.periodsCompared[1] === periodMeta.label);
 
   const kpiCards = kpis(chain.results, selectedIdx);
   const cf = cfRows(result);
@@ -191,6 +233,15 @@ export default async function MisPage({ params, searchParams }: { params: Promis
           ) : (
             <p className="px-4 py-6 text-sm text-slate-400">n/a — needs a prior period (first period in the chain).</p>
           )}
+        </Section>
+
+        {/* Observations (M7 Tier 1) */}
+        <Section
+          title="Observations"
+          subtitle="Tier 1 · deterministic period-over-period changes that cleared the notability thresholds — no interpretation"
+          right={<span className="rounded bg-amber-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-amber-700 uppercase ring-1 ring-inset ring-amber-600/20">Unverified — pending CA</span>}
+        >
+          <ObservationsBlock observations={observations} drilldown={drilldown} />
         </Section>
 
         {/* Ratios */}
