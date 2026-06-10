@@ -124,7 +124,7 @@ const METRICS: MetricDef[] = [
 ];
 
 const sign = (n: number) => (n > 0 ? '+' : n < 0 ? '−' : '');
-function inr(paise: number): string {
+export function inr(paise: number): string {
   const neg = paise < 0;
   const s = Math.round(Math.abs(paise) / 100).toString();
   let grouped: string;

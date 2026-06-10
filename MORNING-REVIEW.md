@@ -12,7 +12,7 @@
 > number is "correct" or client-visible until the CA signs off** (Bible §10.6). CA-VALIDATE list in §5 (now also
 > includes the M7 observation thresholds, mirrored into `ca_validate`).
 
-_Build state: M0 → M7 green (engine output still UNVERIFIED; M7 = Tier-1 observations, no interpretation). 🔴 M7.5 CA golden-fixture diff is the open blocker. Watermark ON._
+_Build state: M0 → M8 green (Tiers 1–3 insight layer, built on the UNVERIFIED engine). 🔴 M-verify (CA golden-fixture diff) is the #1 open blocker. ⚠️ Tiers 2 & 3 (diagnoses / recommendations / goals) are interpretation & advice computed on UNVERIFIED numbers — re-validate every one against the engine after the CA diff. Watermark ON._
 
 ---
 

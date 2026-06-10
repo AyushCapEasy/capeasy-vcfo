@@ -218,6 +218,19 @@
   **NOT** created unless explicitly requested.
 - **Reversible?** Yes — script + docs only; the auth/role model (D-004) is unchanged.
 
+### D-012 · Insight Tier-3 goals = PLACEHOLDER stubs (real capture deferred)
+- **Date:** 2026-06-10 · **Operator-flagged decision; agent took the stub option.**
+- **Decision:** Tier-3 goal-tracking ships with **placeholder target stubs** (`GOALS_STUB` in
+  `src/lib/insight/recommendations.ts`: annualised revenue ₹5.0 Cr, gross margin 62%, net margin 12%, runway
+  ≥ 12 months) plus a **TODO** for real **analyst-entered, per-org client targets** (a targets table + capture
+  form). The goal-tracking **logic is real** (compares the engine's current trajectory vs target, traced to
+  engine fields); only the targets are placeholders.
+- **Why stub, not build capture now:** real goal capture is **client-facing data entry** (new table + UI +
+  RLS) and the targets would themselves need validation — both fall **behind the M-verify gate** (nothing
+  client-facing until the CA golden diff is green). Stubbing keeps Tier 3 demonstrable today without shipping
+  a client surface.
+- **Reversible?** Yes — swap `GOALS_STUB` for a real per-org targets source; the tracking logic is unchanged.
+
 ---
 
 ## OPEN — needs Ayush ([ADD DETAIL]) — carried from Bible §11

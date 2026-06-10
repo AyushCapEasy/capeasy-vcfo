@@ -5,6 +5,8 @@
 import type { MisChain } from '@/lib/engine/mis-data';
 import { pnlRows, bsAssetRows, bsLiabEquityRows, cfRows, ratioCards, kpis, trendSeries, inr, type StmtRow } from './present';
 import { computeObservations } from '../insight/observations';
+import { computeDiagnoses } from '../insight/diagnoses';
+import { computeRecommendations, computeGoalTracking } from '../insight/recommendations';
 import { WATERMARK_ENABLED, WATERMARK_TEXT } from '../watermark';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
@@ -42,6 +44,9 @@ export function buildMisPrintHtml(chain: MisChain, selectedIdx: number): string 
   const cf = cfRows(result);
   const trends = trendSeries(chain.results);
   const observations = computeObservations(chain.results).filter((o) => o.periodsCompared[1] === periodMeta.label);
+  const diagnoses = computeDiagnoses(observations, chain.results);
+  const recommendations = computeRecommendations(observations, diagnoses, chain.results);
+  const goalTracking = computeGoalTracking(chain.results);
 
   const watermarkTile = WATERMARK_ENABLED
     ? `<svg xmlns='http://www.w3.org/2000/svg' width='460' height='300'><text x='10' y='160' transform='rotate(-28 230 150)' font-family='Inter, Segoe UI, sans-serif' font-size='19' font-weight='700' fill='rgba(30,79,168,0.12)'>${WATERMARK_TEXT}</text></svg>`
@@ -73,6 +78,25 @@ export function buildMisPrintHtml(chain: MisChain, selectedIdx: number): string 
         .map((o) => `<tr class="line"><td>${esc(o.statement)}<span class="note"> · traces: ${esc([...new Set(o.traces.map((t) => t.enginePath))].join(', '))}</span></td></tr>`)
         .join('')}</table>`
     : `<p class="muted pad">No period-over-period move cleared the notability thresholds for this period.</p>`;
+
+  const drvFmt = (dr: { contributionPp?: number; contributionPaise?: number; effectAbs?: number }) =>
+    dr.contributionPp !== undefined ? `${dr.contributionPp >= 0 ? '+' : '−'}${Math.abs(dr.contributionPp).toFixed(2)}pp`
+      : dr.contributionPaise !== undefined ? inr(dr.contributionPaise)
+        : dr.effectAbs !== undefined ? `${dr.effectAbs >= 0 ? '+' : '−'}${Math.abs(dr.effectAbs).toFixed(2)}` : '';
+  const diagHtml = diagnoses.length
+    ? `<table class="stmt">${diagnoses
+        .map((d) => `<tr class="subtotal"><td colspan="2">${esc(d.metric)} — ${esc(d.cause)}<span class="note"> · ${esc(d.ruleId)}</span></td></tr>` +
+          d.drivers.map((dr) => `<tr><td style="padding-left:22px;color:#64748b">${esc(dr.driver)} <span class="note">· ${esc(dr.detail)}</span></td><td class="num">${esc(drvFmt(dr))}</td></tr>`).join(''))
+        .join('')}</table>`
+    : `<p class="muted pad">No observations this period, so nothing to diagnose.</p>`;
+  const recHtml = recommendations.length
+    ? `<table class="stmt">${recommendations
+        .map((r) => `<tr class="subtotal"><td colspan="2">${esc(r.action)}<span class="note"> · ${esc(r.ruleId)} · ${esc(r.confidence)}</span></td></tr><tr><td colspan="2" style="padding-left:22px;color:#64748b">Impact: ${esc(r.quantifiedImpact.basis)}</td></tr>`)
+        .join('')}</table>`
+    : `<p class="muted pad">No recommendations — no observed move this period implies an actionable lever (favourable moves don't generate advice).</p>`;
+  const goalsHtml = `<p class="muted pad">⚠ PLACEHOLDER targets (D-013) — real client goals are a TODO; tracking is live against the engine.</p><table class="stmt">${goalTracking
+    .map((g) => `<tr class="line"><td>${esc(g.metric)} <span class="note">· ${esc(g.detail)}</span></td><td class="num">${esc(g.trackStatus.replace('_', ' ').toUpperCase())}</td></tr>`)
+    .join('')}</table>`;
 
   return `<!doctype html><html><head><meta charset="utf-8"/><style>
   @page { size: A4; margin: 14mm 12mm; }
@@ -129,6 +153,9 @@ export function buildMisPrintHtml(chain: MisChain, selectedIdx: number): string 
     </div>
     <div class="card"><h3>Cash Flow — indirect</h3>${cfHtml}</div>
     <div class="card"><h3>Observations <span class="badge">Tier 1 · UNVERIFIED</span></h3>${obsHtml}</div>
+    <div class="card"><h3>Diagnoses <span class="badge">Tier 2 · UNVERIFIED</span></h3>${diagHtml}</div>
+    <div class="card"><h3>Recommendations <span class="badge">Tier 3 · UNVERIFIED</span></h3>${recHtml}</div>
+    <div class="card"><h3>Goal tracking <span class="badge">Tier 3 · placeholder targets</span></h3>${goalsHtml}</div>
     <div class="card"><h3>Key ratios &amp; working capital</h3><div class="ratios">${ratioHtml}</div></div>
     <div class="card"><h3>Month-on-month trend</h3><div class="trends">${trendHtml}</div></div>
     ${commentary}
