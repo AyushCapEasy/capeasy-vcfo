@@ -24,13 +24,20 @@ const GROUP_LABEL: Record<string, string> = {
 };
 
 function RuleBadge({ status }: { status: ValidationRule['status'] }) {
-  const map = {
-    pass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
-    fail: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
-    skipped: 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
-  };
+  const map = { pass: 'badge-positive', fail: 'badge-negative', skipped: 'badge-neutral' } as const;
   const txt = { pass: 'PASS', fail: 'FAIL', skipped: 'N/A' };
-  return <span className={`rounded px-2 py-0.5 text-[10px] font-semibold tracking-wide ${map[status]}`}>{txt[status]}</span>;
+  return <span className={`badge ${map[status]}`}>{txt[status]}</span>;
+}
+
+// Guided numbered step heading (intake is operated by non-experts — clarity first).
+function StepHead({ n, title, note }: { n: number; title: string; note?: React.ReactNode }) {
+  return (
+    <div className="mb-3 flex items-center gap-2.5">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">{n}</span>
+      <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+      {note ? <span className="text-xs font-normal text-slate-400">{note}</span> : null}
+    </div>
+  );
 }
 
 export default async function PeriodIntakePage({ params }: { params: Promise<{ orgId: string; periodId: string }> }) {
@@ -55,50 +62,54 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
   const mappedCount = accounts.filter((a) => a.mappedCategoryCode).length;
 
   return (
-    <div className="flex min-h-full flex-1 flex-col">
-      <header className="flex items-center gap-2 border-b border-neutral-200 px-6 py-3 text-sm dark:border-neutral-800">
-        <Link href="/" className="text-neutral-500 hover:underline">CapEasy vCFO</Link>
-        <span className="text-neutral-400">/</span>
-        <Link href={`/clients/${orgId}`} className="text-neutral-500 hover:underline">{org?.legal_name ?? 'Client'}</Link>
-        <span className="text-neutral-400">/</span>
-        <span className="font-medium">{period.label ?? monthLabel(period.month)}</span>
-        <span className="ml-2 rounded bg-neutral-100 px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase dark:bg-neutral-800">{period.status}</span>
-        <span className="ml-auto text-xs text-neutral-500">{taxYearLabel(period.month)}</span>
+    <div className="flex min-h-full flex-1 flex-col bg-slate-50">
+      <header className="border-b border-slate-200 bg-white px-6 py-3.5">
+        <div className="mx-auto flex max-w-5xl items-center gap-2 text-sm">
+          <Link href="/" className="text-slate-400 hover:text-slate-600 hover:underline">CapEasy vCFO</Link>
+          <span className="text-slate-300">/</span>
+          <Link href={`/clients/${orgId}`} className="text-slate-400 hover:text-slate-600 hover:underline">{org?.legal_name ?? 'Client'}</Link>
+          <span className="text-slate-300">/</span>
+          <span className="font-semibold text-slate-900">{period.label ?? monthLabel(period.month)}</span>
+          <span className="badge badge-neutral ml-1.5">{period.status}</span>
+          <span className="ml-auto text-xs text-slate-400">{taxYearLabel(period.month)}</span>
+        </div>
       </header>
 
-      <main className="flex-1 space-y-8 p-6">
+      <main className="mx-auto w-full max-w-5xl flex-1 space-y-8 p-6">
         {staging ? (
           <ConfirmPanel orgId={orgId} periodId={periodId} filename={staging.filename} preview={staging.preview} />
         ) : (
         <>
         {/* 1) Upload */}
         <section>
-          <h2 className="mb-2 text-sm font-semibold">1 · Upload trial balance</h2>
-          <p className="mb-3 text-xs text-neutral-500">
-            Expected columns: <code>account_code, account_name, debit, credit</code> (CSV or XLSX). Header synonyms tolerated; amounts in ₹.
-          </p>
-          <UploadForm orgId={orgId} periodId={periodId} />
+          <StepHead n={1} title="Upload trial balance" />
+          <div className="card p-5">
+            <p className="mb-3 text-xs text-slate-500">
+              Expected columns: <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px] text-slate-600">account_code, account_name, debit, credit</code> (CSV or XLSX). Header synonyms tolerated; amounts in ₹.
+            </p>
+            <UploadForm orgId={orgId} periodId={periodId} />
+          </div>
         </section>
 
         {hasTb ? (
           <>
             {/* 2) Validation gate */}
             <section>
-              <h2 className="mb-2 text-sm font-semibold">2 · Validation gate (§3.3)</h2>
-              <div className={`rounded-lg border p-4 ${report?.ok ? 'border-emerald-300 dark:border-emerald-900' : 'border-red-300 dark:border-red-900'}`}>
-                <p className="mb-3 text-sm font-medium">
+              <StepHead n={2} title="Validation gate" note="§3.3" />
+              <div className={`card overflow-hidden border-l-4 ${report?.ok ? 'border-l-emerald-500' : 'border-l-red-500'}`}>
+                <p className={`px-5 py-3 text-sm font-semibold ${report?.ok ? 'bg-emerald-50/60 text-emerald-800' : 'bg-red-50/60 text-red-800'}`}>
                   {report?.ok ? '✓ Gate passed — ready to finalise.' : '✗ Gate blocked — resolve the failures below before compute.'}
                 </p>
-                <ul className="space-y-2">
+                <ul className="divide-y divide-slate-100">
                   {report?.rules.map((r) => (
-                    <li key={r.id} className="text-sm">
+                    <li key={r.id} className="px-5 py-3 text-sm">
                       <div className="flex items-center gap-2">
                         <RuleBadge status={r.status} />
-                        <span className="font-medium">{r.label}</span>
+                        <span className="font-medium text-slate-900">{r.label}</span>
                       </div>
-                      <p className="ml-1 text-neutral-600 dark:text-neutral-400">{r.summary}</p>
+                      <p className="mt-1 text-slate-500">{r.summary}</p>
                       {r.offenders?.length ? (
-                        <ul className="mt-1 ml-4 list-disc text-xs text-red-600 dark:text-red-400">
+                        <ul className="mt-1.5 ml-1 list-disc pl-4 text-xs text-red-600 marker:text-red-300">
                           {r.offenders.map((o, i) => (
                             <li key={i}><span className="font-medium">{o.label}</span> — {o.detail}</li>
                           ))}
@@ -112,33 +123,43 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
 
             {/* 3) Mapping */}
             <section>
-              <h2 className="mb-2 text-sm font-semibold">3 · Map accounts <span className="font-normal text-neutral-500">({mappedCount}/{accounts.length} mapped — saved mappings auto-apply next period)</span></h2>
-              <div className="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800">
+              <StepHead n={3} title="Map accounts" note={`${mappedCount}/${accounts.length} mapped — saved mappings auto-apply next period`} />
+              <div className="card overflow-hidden">
                 <table className="w-full text-sm">
-                  <thead className="bg-neutral-50 text-left text-xs text-neutral-500 dark:bg-neutral-900">
-                    <tr>
-                      <th className="px-3 py-2 font-medium">Source account</th>
-                      <th className="px-3 py-2 text-right font-medium">Debit</th>
-                      <th className="px-3 py-2 text-right font-medium">Credit</th>
-                      <th className="px-3 py-2 font-medium">Canonical category</th>
+                  <thead className="border-b border-slate-200 bg-slate-50 text-left">
+                    <tr className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+                      <th className="px-4 py-2.5">Source account</th>
+                      <th className="px-4 py-2.5 text-right">Debit</th>
+                      <th className="px-4 py-2.5 text-right">Credit</th>
+                      <th className="px-4 py-2.5">Canonical category</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                  <tbody className="divide-y divide-slate-100">
                     {accounts.map((a) => {
                       const defaultId = a.mappedCategoryCode ? codeToId.get(a.mappedCategoryCode) : a.suggestions[0] ? codeToId.get(a.suggestions[0].code) : '';
+                      const state = a.mappedCategoryCode ? 'mapped' : a.suggestions[0] ? 'suggested' : 'unmapped';
                       return (
-                        <tr key={a.code} className={a.mappedCategoryCode ? '' : 'bg-amber-50/50 dark:bg-amber-950/20'}>
-                          <td className="px-3 py-2">
-                            <div className="font-medium">{a.name}</div>
-                            <div className="text-xs text-neutral-500">{a.code}{a.mappedCategoryCode ? ` · mapped → ${codeToName.get(a.mappedCategoryCode)}` : a.suggestions[0] ? ` · suggested: ${a.suggestions[0].name}` : ''}</div>
+                        <tr key={a.code} className={state === 'mapped' ? '' : 'bg-amber-50/50'}>
+                          <td className="px-4 py-2.5">
+                            <div className="font-medium text-slate-900">{a.name}</div>
+                            <div className="mt-0.5 text-xs">
+                              <span className="text-slate-400">{a.code}</span>
+                              {state === 'mapped' ? (
+                                <span className="ml-1.5 font-medium text-emerald-600">✓ mapped → {codeToName.get(a.mappedCategoryCode!)}</span>
+                              ) : state === 'suggested' ? (
+                                <span className="ml-1.5 text-amber-600">· suggested: {a.suggestions[0].name} — confirm to save</span>
+                              ) : (
+                                <span className="ml-1.5 font-medium text-amber-600">· needs mapping</span>
+                              )}
+                            </div>
                           </td>
-                          <td className="px-3 py-2 text-right tabular-nums">{a.debitPaise ? paiseToInr(a.debitPaise) : ''}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{a.creditPaise ? paiseToInr(a.creditPaise) : ''}</td>
-                          <td className="px-3 py-2">
+                          <td className="num px-4 py-2.5 text-slate-700">{a.debitPaise ? paiseToInr(a.debitPaise) : ''}</td>
+                          <td className="num px-4 py-2.5 text-slate-700">{a.creditPaise ? paiseToInr(a.creditPaise) : ''}</td>
+                          <td className="px-4 py-2.5">
                             <form action={saveMapping.bind(null, orgId, periodId)} className="flex items-center gap-2">
                               <input type="hidden" name="code" value={a.code} />
                               <input type="hidden" name="name" value={a.name} />
-                              <select name="categoryId" defaultValue={defaultId ?? ''} className="rounded-md border border-neutral-300 bg-white px-2 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900">
+                              <select name="categoryId" defaultValue={defaultId ?? ''} className="min-w-0 flex-1 rounded-[var(--radius-ctl)] border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25">
                                 <option value="">— unmapped —</option>
                                 {groups.map((g) => (
                                   <optgroup key={g} label={GROUP_LABEL[g] ?? g}>
@@ -148,7 +169,7 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
                                   </optgroup>
                                 ))}
                               </select>
-                              <button type="submit" className="rounded-md border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-900">Save</button>
+                              <button type="submit" className="shrink-0 rounded-[var(--radius-ctl)] border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50">Save</button>
                             </form>
                           </td>
                         </tr>
@@ -161,25 +182,27 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
 
             {/* 4) Finalise */}
             <section>
-              <h2 className="mb-2 text-sm font-semibold">4 · Finalise</h2>
-              {report?.ok ? (
-                <div className="flex items-center gap-3">
-                  <form action={finalizePeriod.bind(null, orgId, periodId)}>
-                    <input type="hidden" name="status" value="reviewed" />
-                    <button className="rounded-md border border-blue-300 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-300 dark:hover:bg-blue-950/40">Mark reviewed</button>
-                  </form>
-                  <form action={finalizePeriod.bind(null, orgId, periodId)}>
-                    <input type="hidden" name="status" value="locked" />
-                    <button className="rounded-md border border-emerald-300 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900 dark:text-emerald-300 dark:hover:bg-emerald-950/40">Lock period</button>
-                  </form>
-                </div>
-              ) : (
-                <p className="text-sm text-neutral-500">The validation gate must pass before this period can be marked reviewed or locked.</p>
-              )}
+              <StepHead n={4} title="Finalise" />
+              <div className="card p-5">
+                {report?.ok ? (
+                  <div className="flex items-center gap-3">
+                    <form action={finalizePeriod.bind(null, orgId, periodId)}>
+                      <input type="hidden" name="status" value="reviewed" />
+                      <button className="btn border border-blue-300 bg-white text-blue-700 shadow-sm hover:bg-blue-50">Mark reviewed</button>
+                    </form>
+                    <form action={finalizePeriod.bind(null, orgId, periodId)}>
+                      <input type="hidden" name="status" value="locked" />
+                      <button className="btn border border-emerald-300 bg-white text-emerald-700 shadow-sm hover:bg-emerald-50">Lock period</button>
+                    </form>
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500">The validation gate must pass before this period can be marked reviewed or locked.</p>
+                )}
+              </div>
             </section>
           </>
         ) : (
-          <p className="text-sm text-neutral-500">Upload a trial balance to begin mapping and validation.</p>
+          <div className="card p-6 text-center text-sm text-slate-500">Upload a trial balance to begin mapping and validation.</div>
         )}
         </>
         )}

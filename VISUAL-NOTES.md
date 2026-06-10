@@ -56,3 +56,21 @@ neutral`; the D-013 placeholder-targets banner refined (kept clearly visible). D
 **Untouched:** `computeObservations/Diagnoses/Recommendations/GoalTracking` and all traces — logic intact.
 **Decision:** kept the PDF insight sections as-is (they already use the statement table styling → acceptable parity);
 did not over-style to avoid thrash.
+
+---
+
+## V3 — Intake & mapping flow ✅
+**Files:** `periods/[periodId]/page.tsx`, `upload-form.tsx`, `confirm-panel.tsx`.
+**What changed:** these three were heavy with leftover CRM `neutral-*` + dead `dark:` classes — unified onto the slate /
+design system. Page now sits on the slate-50 canvas with white cards. Added a guided numbered-step pattern (`StepHead`
+1→4: Upload · Validate · Map · Finalise). Validation gate → a card with a semantic left rule (emerald pass / red fail)
++ divided rule rows + `RuleBadge` via `.badge` variants. **Mapping table** made state-obvious: each source account shows
+**✓ mapped → X** (emerald) / **suggested: Y — confirm** (amber) / **needs mapping** (amber row tint), using the existing
+fuzzy-suggestion data; selects/buttons → design-system controls. Upload form → primary submit + slate file picker +
+red error card. Confirm-panel fully restyled (column-mapping selects → `.select`, proposal cards with `.badge`
+accepted/as-written states, totals strip, `.btn` actions).
+**Untouched:** every form action, hidden input, `select` name/defaultValue, and data binding (uploadTb, saveMapping,
+reassignColumns, setFlip, confirmTb, cancelTb, finalizePeriod) — styling only.
+**Flag for review:** the **decision engine's** auto/confirm/flag confidence buckets (M9) are NOT surfaced in this UI —
+wiring them in is LOGIC (out of visual scope). V3 styles the existing intake fuzzy-suggestion states; the "what's
+mapped / suggested / needs mapping" cues above are the visual stand-in until that wiring is built as a feature.
