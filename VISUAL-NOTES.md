@@ -74,3 +74,20 @@ reassignColumns, setFlip, confirmTb, cancelTb, finalizePeriod) — styling only.
 **Flag for review:** the **decision engine's** auto/confirm/flag confidence buckets (M9) are NOT surfaced in this UI —
 wiring them in is LOGIC (out of visual scope). V3 styles the existing intake fuzzy-suggestion states; the "what's
 mapped / suggested / needs mapping" cues above are the visual stand-in until that wiring is built as a feature.
+
+---
+
+## V4 — Shell, nav, auth, client list ✅
+**Files:** `layout.tsx`, `login/page.tsx`, `login-form.tsx`, `page.tsx` (home), `clients/[orgId]/page.tsx`.
+**What changed:**
+- **Shell:** root `body` background → the institutional `slate-50` canvas (white surfaces now read as cards). Headers
+  unified: white bar, `border-slate-200`, centered `max-w-5xl`, faint breadcrumbs, sign-out → compact `.btn-secondary`.
+- **Login:** centered branded card (`eyebrow` CapEasy wordmark + bold vCFO), form in a `.card` with shadow; inputs →
+  `.input`, submit → full-width `.btn-primary`, error in red.
+- **Home (client workspaces):** client cards → `.card` with hover lift, role → `.badge badge-neutral`; added a proper
+  empty-state card.
+- **Client overview:** breadcrumb header + MIS button → `.btn-primary`; periods list → a `.card` with divided rows and
+  `.badge` status (draft/reviewed/locked → warning/info/positive); add-period form → `.input`/`.btn-primary`.
+**Untouched:** auth flow (signIn/signOut server actions), RLS queries, createPeriod, all data — styling only.
+**Decision:** removed the dead CRM `dark:` classes here (inert since V0 remapped the dark variant) and migrated
+`neutral-*` → `slate-*` so the whole app shares one palette.

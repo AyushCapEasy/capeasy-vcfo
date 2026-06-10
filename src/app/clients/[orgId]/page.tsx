@@ -6,9 +6,9 @@ import { monthLabel, taxYearLabel } from '@/lib/intake/period';
 import { createPeriod } from './actions';
 
 const STATUS_STYLE: Record<string, string> = {
-  draft: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
-  reviewed: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-  locked: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
+  draft: 'badge-warning',
+  reviewed: 'badge-info',
+  locked: 'badge-positive',
 };
 
 export default async function ClientWorkspace({ params }: { params: Promise<{ orgId: string }> }) {
@@ -30,42 +30,44 @@ export default async function ClientWorkspace({ params }: { params: Promise<{ or
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <header className="flex items-center gap-2 border-b border-neutral-200 px-6 py-3 text-sm dark:border-neutral-800">
-        <Link href="/" className="text-neutral-500 hover:underline">CapEasy vCFO</Link>
-        <span className="text-neutral-400">/</span>
-        <span className="font-medium">{org.legal_name}</span>
-        <Link href={`/clients/${orgId}/mis`} className="bg-primary hover:bg-primary/90 ml-auto rounded-md px-3 py-1.5 text-xs font-medium text-white">
-          View MIS pack →
-        </Link>
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-5xl items-center gap-2 px-6 py-3.5 text-sm">
+          <Link href="/" className="text-slate-400 hover:text-slate-600 hover:underline">CapEasy vCFO</Link>
+          <span className="text-slate-300">/</span>
+          <span className="font-semibold text-slate-900">{org.legal_name}</span>
+          <Link href={`/clients/${orgId}/mis`} className="btn btn-primary ml-auto px-3 py-1.5 text-xs">
+            View MIS pack →
+          </Link>
+        </div>
       </header>
 
-      <main className="flex-1 p-6">
-        <h1 className="text-lg font-semibold">Periods</h1>
-        <p className="mt-1 text-sm text-neutral-500">
+      <main className="mx-auto w-full max-w-5xl flex-1 p-6">
+        <h1 className="text-xl font-bold text-slate-900">Periods</h1>
+        <p className="mt-1 text-sm text-slate-500">
           {org.entity_type}{org.state ? ` · ${org.state}` : ''} — period-over-period is first-class; each new month chains to the last.
         </p>
 
-        <ul className="mt-4 divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+        <ul className="card mt-5 divide-y divide-slate-100 overflow-hidden">
           {(periods ?? []).map((p) => (
             <li key={p.id}>
-              <Link href={`/clients/${orgId}/periods/${p.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-900">
-                <span className="font-medium">{p.label ?? monthLabel(p.period_month)}</span>
-                <span className="flex items-center gap-3 text-xs text-neutral-500">
-                  <span>{taxYearLabel(p.period_month)}</span>
-                  <span className={`rounded px-2 py-0.5 font-medium tracking-wide uppercase ${STATUS_STYLE[p.status] ?? ''}`}>{p.status}</span>
+              <Link href={`/clients/${orgId}/periods/${p.id}`} className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50">
+                <span className="font-medium text-slate-900">{p.label ?? monthLabel(p.period_month)}</span>
+                <span className="flex items-center gap-3 text-xs text-slate-400">
+                  <span className="tnum">{taxYearLabel(p.period_month)}</span>
+                  <span className={`badge ${STATUS_STYLE[p.status] ?? ''}`}>{p.status}</span>
                 </span>
               </Link>
             </li>
           ))}
-          {!periods?.length ? <li className="px-4 py-3 text-sm text-neutral-500">No periods yet — add the first one below.</li> : null}
+          {!periods?.length ? <li className="px-5 py-8 text-center text-sm text-slate-400">No periods yet — add the first one below.</li> : null}
         </ul>
 
         <form action={createPeriod.bind(null, orgId)} className="mt-6 flex items-end gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-neutral-700 dark:text-neutral-300">New period (month)</span>
-            <input type="month" name="month" required className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100" />
+          <label className="flex flex-col gap-1.5">
+            <span className="label">New period (month)</span>
+            <input type="month" name="month" required className="input w-auto" />
           </label>
-          <button type="submit" className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900">
+          <button type="submit" className="btn btn-primary">
             Add period
           </button>
         </form>
