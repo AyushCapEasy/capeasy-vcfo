@@ -145,10 +145,66 @@
 
 ---
 
-## E. Forthcoming (set during M9 — flagged here so it isn't forgotten)
+## E. Materiality floor (decision engine) — still deferred
 
-### E1 · Materiality floor (decision engine, M9)
-- **Assumes:** a configurable "dirty-rupee" threshold decides when an MIS carries a visible "contains ₹X unclassified" band. **NOT yet built; NOT to be guessed** — to be tuned from real data (Vision §4). The CA should pre-agree the *method* for setting it.
+### E1 · Dirty-rupee BAND floor
+- **Assumes:** a configurable threshold decides when an MIS carries a visible "contains ₹X unclassified" band on the page. The decision engine now *surfaces the dirty-rupee residue as a number* (M9, §F9), but the threshold at which that number triggers a banner is **NOT yet set; NOT to be guessed** — to be tuned from real data (Vision §4). The CA should pre-agree the *method* for setting it. (Distinct from the §F8 gate thresholds, which are conservative config constants and ARE set.)
+- **Verdict:** ☐ ok ☐ needs-change ☐ note — ____________________________________________
+
+---
+
+## F. Decision engine — Stage 1 rules + Stage 3 gate (M9)
+
+> `src/lib/decision/` — classifies each parsed TB row into the canonical taxonomy with an **honest
+> confidence score**, then a gate routes each row by that score. The score is the heart: it reports how
+> *sure* Stage 1 is, not just what it guessed. Built on the same intake fuzzy matcher (`suggestCategories`)
+> the analyst sees, so the engine and the manual mapper agree by construction. Confidence is a relative
+> 0–1 signal, **NOT a calibrated probability** — the CA is asked to confirm the *bands and routing*, not
+> the decimals. Stage 0 (bank reconciliation) and Stage 2 (LLM) are stubbed, not built. Worked figures
+> below are from `scripts/decision-coverage.mts`.
+
+### F1 · `STAGE1.confirmed_mapping` — confidence 0.99
+- **Assumes:** a mapping a human approved before (per-org code→category or name→category memory) is near-certain and beats all name matching. Default: no prior mappings (nothing is "confirmed" until actually confirmed). This is the learning-loop hook M10 will persist.
+- **Worked:** code `SUS01` previously confirmed → `admin_other_opex` ⇒ confidence 0.99 → auto, regardless of the name.
+- **Verdict:** ☐ ok ☐ needs-change ☐ note — ____________________________________________
+
+### F2 · `STAGE1.name_exact` — confidence 0.95
+- **Assumes:** the source name contains (or is contained by) a canonical name or known synonym phrase ⇒ treat as an exact/known match at 0.95 (high, but never a literal 1.0 — names can still mislead).
+- **Worked:** "Salaries & Wages" → `employee_benefits` 0.95 → auto. "Trade Receivables" → AR 0.95 → auto.
+- **Verdict:** ☐ ok ☐ needs-change ☐ note — ____________________________________________
+
+### F3 · `STAGE1.name_keyword` — confidence = match strength, capped 0.88
+- **Assumes:** a strong, clear-margin keyword/synonym match short of an exact phrase ⇒ medium-high confidence, never claiming certainty from a keyword alone.
+- **Worked:** "Software Subscriptions" → `technology_software`.
+- **Verdict:** ☐ ok ☐ needs-change ☐ note — ____________________________________________
+
+### F4 · `STAGE1.name_fuzzy` — confidence = match strength, capped 0.60
+- **Assumes:** a weak partial match is low-confidence; routed to founder-confirm (≥0.50) or, if weaker, flagged. Carries its best-guess category as a hint either way.
+- **Worked:** "HDFC Bank Current Account" → `cash_bank` at 67% match ⇒ 0.60 → founder-confirm.
+- **Verdict:** ☐ ok ☐ needs-change ☐ note — ____________________________________________
+
+### F5 · Ambiguity dampening — margin 0.12, cap to founder-confirm (0.55)
+- **Assumes:** if the top two candidates are within 0.12 of each other, the call is AMBIGUOUS ⇒ confidence is capped into the founder-confirm band so a human disambiguates (the row keeps both candidates as alternatives). A near-tie is never auto-applied.
+- **Worked:** "Sales – Services" ties `operating_revenue` vs `sales & marketing` (both ≈0.50) ⇒ confidence 0.50, reasoning flags AMBIGUOUS → founder-confirm.
+- **Verdict:** ☐ ok ☐ needs-change ☐ note — ____________________________________________
+
+### F6 · Low-information stub guard — cap to founder-confirm (0.55)
+- **Assumes:** a name composed ENTIRELY of contentless ledger words (misc, sundry, suspense, other, general, adjustment, round-off, control, opening/closing, clearing, transfer, settlement, …) carries no real signal and must never auto-apply — even when the fuzzy matcher finds a substring hit. **This guards a known matcher over-confidence:** "Misc" is a substring of the synonym "misc income", which would otherwise score it 0.95 → auto into `other_income`. The guard caps it to founder-confirm with a "low-information name" note. (Implemented in the decision layer; the shared intake matcher is untouched.)
+- **Worked:** "Misc" ⇒ would-be 0.95 `other_income` → capped to 0.55 → founder-confirm, reasoning "generic/low-information name — not auto-applied, needs confirmation".
+- **Verdict (is this the right stub list + routing?):** ☐ ok ☐ needs-change ☐ note — ____________________________________________
+
+### F7 · Classify floor — 0.30
+- **Assumes:** if the best match is below 0.30 the engine declines to propose at all (confidence 0, `decidedBy: 'unclassified'`) rather than guess. These rows are the genuine unclassifiable residue.
+- **Worked:** "Suspense A/c", "Round Off", "Inter-company Settlement" (best guess "Finance costs" only 28%) ⇒ unclassified → flagged.
+- **Verdict:** ☐ ok ☐ needs-change ☐ note — ____________________________________________
+
+### F8 · Stage 3 gate thresholds — auto ≥ 0.90, founder-confirm ≥ 0.50, else flagged
+- **Assumes:** **config constants, conservative by design** (a HIGH auto bar so the engine errs toward asking the founder rather than silently auto-applying). `auto` = shown but non-blocking; `confirm` = founder approves before it counts; `flag` = unclassifiable residue. These are NOT the materiality floor (§E1).
+- **Worked coverage** (% by row count): Acme seeded chart (25 lines) **84% auto / 16% confirm / 0% flagged** (₹0 dirty); a deliberately messy 11-line TB **45.5% / 18.2% / 36.4%** (₹48,512 dirty); the 16 adversarial battery charts ≈ **82% / 18% / 0%** each (clean names → no residue).
+- **Verdict (are 0.90 / 0.50 the right conservative bands?):** ☐ ok ☐ needs-change ☐ note — ____________________________________________
+
+### F9 · Dirty-rupee residue surfaced as a number
+- **Assumes:** the rupees riding on flagged rows are summed and surfaced (= flagged rupees), so a founder always sees how much ₹ is un-auto-classified. Transparency: every row carries `decidedBy` + `confidence` + plain-language `reasoning` + runner-up alternatives. The **band threshold** that turns this number into a visible banner is still deferred (§E1).
 - **Verdict:** ☐ ok ☐ needs-change ☐ note — ____________________________________________
 
 ---
