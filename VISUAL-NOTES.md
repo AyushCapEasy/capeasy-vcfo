@@ -104,3 +104,17 @@ indistinguishable). Login / upload / validation error states already styled (red
 **Deliberately NOT added (flagged):** route-level `loading.tsx` skeletons and `error.tsx` boundaries — those introduce
 Suspense fallbacks / a `reset()` handler, i.e. **behavior**, which the hard constraints put out of scope for a
 visual-only pass. Recommended as a small follow-up feature if desired.
+
+---
+
+## V-final — coherence + review ✅
+- **End-to-end palette coherence:** grep confirms **zero** `neutral-*`/`dark:` classes remain in any screen (only the
+  explanatory comment in `globals.css`). One slate palette + brand + reserved semantic color across the whole app.
+- **Watermark verified intact:** `git diff main...visual-revamp` does NOT include `src/lib/watermark.ts` or
+  `mis/watermark.tsx` — never touched; watermark + StatusRibbon render everywhere; `VCFO_WATERMARK_OFF` unset.
+- **Scope verified:** branch diff = 15 files (+573/−296), all UI/CSS/docs; no engine / decision / insight / intake-logic
+  / RLS / auth-logic file in the diff.
+- **Final build exit 0.** Wrote `VISUAL-REVIEW.md` (per-screen table, autonomous decisions to veto, uncertainties,
+  confirmations, and how to get the preview URL).
+- **Preview URL:** held — requires authorizing `git push -u origin visual-revamp`, which would also push the local-only
+  M7–M9 commits to GitHub. Flagged for the operator in VISUAL-REVIEW.md; **not merged to main**.
