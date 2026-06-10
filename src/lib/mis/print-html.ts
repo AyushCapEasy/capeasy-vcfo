@@ -113,23 +113,23 @@ export function buildMisPrintHtml(chain: MisChain, selectedIdx: number): string 
   .badge { display:inline-block; border:1px solid #cbd5e1; border-radius:4px; padding:1px 6px; font-size:9px; text-transform:uppercase; font-weight:700; color:#475569; margin-left:6px; }
   .kpis { display:flex; gap:8px; margin-bottom:12px; }
   .kpi { flex:1; border:1px solid #e2e8f0; border-radius:8px; padding:8px 10px; }
-  .kpi-l { color:#94a3b8; font-size:9px; text-transform:uppercase; letter-spacing:.04em; }
-  .kpi-v { font-size:15px; font-weight:700; margin-top:2px; }
+  .kpi-l { color:#94a3b8; font-size:9px; text-transform:uppercase; letter-spacing:.06em; font-weight:600; }
+  .kpi-v { font-size:16px; font-weight:700; margin-top:3px; font-variant-numeric:tabular-nums lining-nums; }
   .kpi-d { font-size:9px; margin-top:2px; }
   .grid2 { display:flex; gap:12px; }
   .grid2 > * { flex:1; }
   .card { border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; margin-bottom:12px; background:#fff; }
   .card h3 { font-size:11px; margin:0; padding:7px 10px; border-bottom:1px solid #eef2f6; background:#f8fafc; }
   table.stmt { width:100%; border-collapse:collapse; }
-  table.stmt td { padding:3px 10px; font-size:11px; border-top:1px solid #f1f5f9; }
-  table.stmt td.num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  table.stmt td { padding:3.5px 11px; font-size:11px; border-top:1px solid #f1f5f9; }
+  table.stmt td.num { text-align:right; font-variant-numeric:tabular-nums lining-nums; white-space:nowrap; }
   tr.subtotal td { background:#f8fafc; font-weight:600; }
-  tr.total td { background:#eef3fb; font-weight:700; color:#1e4fa8; }
+  tr.total td { background:#eef3fb; font-weight:700; color:#1e4fa8; border-top:1px solid #cbd5e1; }
   .note { color:#94a3b8; font-weight:400; }
   .ratios { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:#eef2f6; }
   .ratio { background:#fff; padding:6px 10px; }
-  .ratio-l { color:#94a3b8; font-size:9px; }
-  .ratio-v { font-weight:600; font-size:13px; margin-top:1px; font-variant-numeric:tabular-nums; }
+  .ratio-l { color:#94a3b8; font-size:9px; text-transform:uppercase; letter-spacing:.04em; font-weight:600; }
+  .ratio-v { font-weight:600; font-size:14px; margin-top:2px; font-variant-numeric:tabular-nums lining-nums; color:#0f172a; }
   .trends { display:flex; gap:14px; padding:10px; }
   .trend { flex:1; }
   .trend-l { font-size:10px; color:#475569; font-weight:600; }
