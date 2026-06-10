@@ -11,6 +11,11 @@ node_modules/
 .env.local.*
 .admin-credentials.local
 
+# --- Real client data — NEVER commit (D-007: this project stays fake/demo-data-only) ---
+# Transient real-client inputs (e.g. a real trial balance for a Stage-1 reality-check) live here
+# and are classified IN MEMORY only — never persisted to the DB, never copied anywhere trackable.
+.client-data.local/
+
 # --- Next.js / build output ---
 .next/
 out/
