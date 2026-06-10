@@ -14,17 +14,13 @@ export function Commentary({ orgId, periodId, value }: { orgId: string; periodId
         defaultValue={value ?? ''}
         rows={5}
         placeholder="Analyst commentary — what drove the month, risks, and the story behind the numbers…"
-        className="focus:border-primary w-full resize-y rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 outline-none"
+        className="textarea resize-y leading-relaxed"
       />
       <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={pending}
-          className="bg-primary hover:bg-primary/90 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
-        >
+        <button type="submit" disabled={pending} className="btn btn-primary">
           {pending ? 'Saving…' : 'Save commentary'}
         </button>
-        {state.saved ? <span className="text-positive text-sm">Saved.</span> : null}
+        {state.saved ? <span className="text-positive text-sm font-medium">Saved.</span> : null}
       </div>
     </form>
   );
