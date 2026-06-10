@@ -8,33 +8,105 @@
    `.dark` ancestor, which never exists here) so it no longer responds to the OS preference. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* CapEasy brand system — matched to the CRM (Inter, #1E4FA8 primary, #F08025 accent). */
+/* ============================================================================================
+   CapEasy vCFO — Design System (V0, visual-revamp)
+   North star: financial software a founder puts in front of an investor — credible, precise,
+   institutional (Bloomberg / top-tier audit / FT restraint). Color carries financial MEANING, not
+   decoration. This block is the single source of design truth; screens compose from it.
+   ============================================================================================ */
 @theme {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
 
+  /* Brand */
   --color-primary: #1e4fa8;
   --color-primary-foreground: #ffffff;
+  --color-primary-50: #eef3fb;   /* tint — total rows, selected pills */
+  --color-primary-700: #19437f;  /* hover/pressed */
   --color-accent: #f08025;
   --color-accent-foreground: #ffffff;
 
-  --color-ink: #0f172a; /* slate-900 — headings */
-  --color-positive: #15803d; /* emerald-700 */
-  --color-negative: #b91c1c; /* red-700 */
+  /* Neutrals (cool grey — structure & text hierarchy) */
+  --color-ink: #0f172a;     /* slate-900 — headings, primary figures */
+  --color-body: #334155;    /* slate-700 — body text */
+  --color-muted: #64748b;   /* slate-500 — secondary text */
+  --color-faint: #94a3b8;   /* slate-400 — tertiary / captions */
+  --color-line: #e2e8f0;    /* slate-200 — borders */
+  --color-hair: #f1f5f9;    /* slate-100 — hairline dividers */
+  --color-canvas: #f8fafc;  /* slate-50 — app background behind white surfaces */
+
+  /* Semantic — reserved for FINANCIAL meaning only (favorable/unfavorable, +/−) */
+  --color-positive: #15803d;     /* emerald-700 */
+  --color-negative: #b91c1c;     /* red-700 */
+  --color-warning: #b45309;      /* amber-700 — UNVERIFIED / pending-CA flags */
+
+  /* Radii — institutional: confident, not bubbly */
+  --radius-card: 0.75rem; /* 12px */
+  --radius-ctl: 0.5rem;   /* 8px — buttons, inputs, pills */
 }
 
 :root {
-  color-scheme: light; /* render native controls (select option popups, date pickers, scrollbars) in light mode */
+  color-scheme: light; /* render native controls (select popups, date pickers, scrollbars) in light mode */
   --background: #ffffff;
   --foreground: #0f172a;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-optical-sizing: auto;
+@layer base {
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  /* Headings read as precise, not loud — slight negative tracking, set in ink. */
+  h1, h2, h3, h4 { color: var(--color-ink); letter-spacing: -0.011em; }
+  h1 { letter-spacing: -0.02em; }
+  /* One consistent keyboard-focus treatment app-wide (inputs define their own ring via .input). */
+  :where(a, button, [role="button"], summary):focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  ::selection { background: color-mix(in srgb, var(--color-primary) 16%, transparent); }
 }
 
-/* Tabular figures everywhere we render money/ratios. */
-.tnum {
-  font-variant-numeric: tabular-nums;
+/* Tabular, lining figures everywhere we render money / ratios so columns align. */
+.tnum { font-variant-numeric: tabular-nums lining-nums; }
+/* A right-aligned numeric cell. */
+.num { font-variant-numeric: tabular-nums lining-nums; text-align: right; white-space: nowrap; }
+
+/* ---- Shared component primitives (composed by screens in V1+). Additive: unused until applied. ---- */
+@layer components {
+  /* Surfaces */
+  .card { @apply rounded-[var(--radius-card)] border border-slate-200 bg-white shadow-sm; }
+  .panel-head { @apply flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5; }
+  .panel-title { @apply text-sm font-semibold text-slate-900; }
+  .panel-sub { @apply mt-0.5 text-xs text-slate-400; }
+  .eyebrow { @apply text-[11px] font-semibold uppercase tracking-wider text-slate-400; }
+
+  /* Buttons */
+  .btn { @apply inline-flex items-center justify-center gap-1.5 rounded-[var(--radius-ctl)] px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply bg-primary text-white shadow-sm hover:bg-primary-700; }
+  .btn-secondary { @apply border border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50; }
+  .btn-ghost { @apply text-slate-600 hover:bg-slate-100; }
+
+  /* Badges — status / semantic. Compose with a color variant. */
+  .badge { @apply inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset; }
+  .badge-warning { @apply bg-amber-50 text-amber-700 ring-amber-600/20; }
+  .badge-info { @apply bg-blue-50 text-blue-700 ring-blue-600/20; }
+  .badge-positive { @apply bg-emerald-50 text-emerald-700 ring-emerald-600/20; }
+  .badge-negative { @apply bg-red-50 text-red-700 ring-red-600/20; }
+  .badge-neutral { @apply bg-slate-100 text-slate-500 ring-slate-400/20; }
+
+  /* Forms */
+  .label { @apply block text-sm font-medium text-slate-700; }
+  .input, .textarea, .select {
+    @apply w-full rounded-[var(--radius-ctl)] border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition-colors;
+    @apply placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25;
+  }
+
+  /* Pills (period switcher / tabs) */
+  .pill { @apply rounded-[var(--radius-ctl)] px-2.5 py-1 text-xs font-medium transition-colors; }
+  .pill-active { @apply bg-primary text-white; }
+  .pill-idle { @apply text-slate-600 hover:bg-slate-100; }
 }
