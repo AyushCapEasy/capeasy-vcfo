@@ -222,9 +222,11 @@ export default async function MisPage({ params, searchParams }: { params: Promis
 
   if (!chain.periods.length) {
     return (
-      <main className="mx-auto max-w-2xl p-10 text-center">
-        <p className="text-slate-500">No periods yet for {chain.org.legalName}. Add a period and upload a trial balance first.</p>
-        <Link href={`/clients/${orgId}`} className="text-primary mt-3 inline-block text-sm hover:underline">← Back to client</Link>
+      <main className="mx-auto flex min-h-full max-w-2xl items-center justify-center p-6">
+        <div className="card w-full p-10 text-center">
+          <p className="text-sm text-slate-500">No periods yet for <span className="font-medium text-slate-700">{chain.org.legalName}</span>. Add a period and upload a trial balance first.</p>
+          <Link href={`/clients/${orgId}`} className="text-primary mt-4 inline-block text-sm font-medium hover:underline">← Back to client</Link>
+        </div>
       </main>
     );
   }

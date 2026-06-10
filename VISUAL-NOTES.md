@@ -91,3 +91,16 @@ mapped / suggested / needs mapping" cues above are the visual stand-in until tha
 **Untouched:** auth flow (signIn/signOut server actions), RLS queries, createPeriod, all data — styling only.
 **Decision:** removed the dead CRM `dark:` classes here (inert since V0 remapped the dark variant) and migrated
 `neutral-*` → `slate-*` so the whole app shares one palette.
+
+---
+
+## V5 — Empty / loading / error / edge states ✅
+**Files:** `clients/[orgId]/mis/page.tsx` (no-periods empty), new `src/app/not-found.tsx`.
+**What changed:** most empties were already normalized during V1–V4 (insight-block empties, Cash-Flow "n/a — needs a
+prior period", home/overview/intake empties → consistent `.card` muted-text panels). V5 finished the set: the MIS
+no-periods state → a centered `.card` empty panel; added a styled global **404** (`not-found.tsx`) — presentational
+replacement for Next's default, used by `notFound()` (missing route OR RLS-denied client, deliberately
+indistinguishable). Login / upload / validation error states already styled (red cards) in earlier stages.
+**Deliberately NOT added (flagged):** route-level `loading.tsx` skeletons and `error.tsx` boundaries — those introduce
+Suspense fallbacks / a `reset()` handler, i.e. **behavior**, which the hard constraints put out of scope for a
+visual-only pass. Recommended as a small follow-up feature if desired.
