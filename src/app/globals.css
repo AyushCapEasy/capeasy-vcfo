@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* Dark-mode fix (root cause). The app has NO dark theme — it is light-only by design (body is
+   hardcoded bg-white/text-slate-900; no dark tokens, no toggle). But Tailwind v4's default
+   `dark:` variant is @media (prefers-color-scheme: dark), so a dark-mode browser auto-activated a
+   half-built dark mode: some backgrounds went dark while text stayed the light slate — e.g. native
+   <select> option popups rendered dark-on-dark. Redefine `dark:` as class-based (only under a
+   `.dark` ancestor, which never exists here) so it no longer responds to the OS preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* CapEasy brand system — matched to the CRM (Inter, #1E4FA8 primary, #F08025 accent). */
 @theme {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -15,6 +23,7 @@
 }
 
 :root {
+  color-scheme: light; /* render native controls (select option popups, date pickers, scrollbars) in light mode */
   --background: #ffffff;
   --foreground: #0f172a;
 }
