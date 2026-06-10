@@ -99,7 +99,7 @@ function StatementBlock({ rows, drilldown }: { rows: StmtRow[]; drilldown: Recor
 // Tier 1 observations (M7) into the selected period, with reuse of the existing by-code drill-down.
 function ObservationsBlock({ observations, drilldown }: { observations: Observation[]; drilldown: Record<string, DrilldownLine[]> }) {
   if (!observations.length) {
-    return <p className="px-4 py-6 text-sm text-slate-400">No period-over-period move cleared the notability thresholds for this period (or it is the first period). Nothing is fabricated — honest silence.</p>;
+    return <p className="px-5 py-8 text-sm text-slate-400">No period-over-period move cleared the notability thresholds for this period (or it is the first period). Nothing is fabricated — honest silence.</p>;
   }
   return (
     <div className="divide-y divide-slate-100">
@@ -109,12 +109,12 @@ function ObservationsBlock({ observations, drilldown }: { observations: Observat
         const enginePaths = [...new Set(o.traces.map((t) => t.enginePath))];
         return (
           <details key={o.id} className="group">
-            <summary className="flex cursor-pointer list-none items-start gap-2 px-4 py-2.5 text-sm hover:bg-slate-50">
-              <svg className="mt-0.5 h-3 w-3 shrink-0 text-slate-400 transition-transform group-open:rotate-90" viewBox="0 0 12 12"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
-              <span className="flex-1 text-slate-700">{o.statement}</span>
-              <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-slate-500 uppercase">{o.status}</span>
+            <summary className="flex cursor-pointer list-none items-start gap-2.5 px-5 py-3 text-sm hover:bg-slate-50">
+              <svg className="mt-1 h-3 w-3 shrink-0 text-slate-400 transition-transform group-open:rotate-90" viewBox="0 0 12 12"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
+              <span className="flex-1 leading-relaxed text-slate-700">{o.statement}</span>
+              <span className="badge badge-neutral mt-0.5 shrink-0">{o.status}</span>
             </summary>
-            <div className="space-y-1 bg-slate-50/60 px-4 pb-3 pl-9 text-xs text-slate-500">
+            <div className="space-y-1 bg-slate-50/60 px-5 pb-3 pl-10 text-xs text-slate-500">
               <p>
                 Traces to engine field{enginePaths.length > 1 ? 's' : ''}:{' '}
                 {enginePaths.map((p) => <code key={p} className="mr-1 rounded bg-white px-1 py-0.5 text-[11px] text-slate-600">{p}</code>)}
@@ -137,7 +137,7 @@ function ObservationsBlock({ observations, drilldown }: { observations: Observat
 
 // Tier 2 — diagnoses (rule-based "why"; each move decomposed into engine-field drivers).
 function DiagnosesBlock({ diagnoses }: { diagnoses: Diagnosis[] }) {
-  if (!diagnoses.length) return <p className="px-4 py-6 text-sm text-slate-400">No observations this period, so nothing to diagnose.</p>;
+  if (!diagnoses.length) return <p className="px-5 py-8 text-sm text-slate-400">No observations this period, so nothing to diagnose.</p>;
   const fmt = (dr: Diagnosis['drivers'][number]) =>
     dr.contributionPp !== undefined ? `${dr.contributionPp >= 0 ? '+' : '−'}${Math.abs(dr.contributionPp).toFixed(2)}pp`
       : dr.contributionPaise !== undefined ? inr(dr.contributionPaise)
@@ -146,12 +146,12 @@ function DiagnosesBlock({ diagnoses }: { diagnoses: Diagnosis[] }) {
     <div className="divide-y divide-slate-100">
       {diagnoses.map((d) => (
         <details key={d.observationId} className="group">
-          <summary className="flex cursor-pointer list-none items-start gap-2 px-4 py-2.5 text-sm hover:bg-slate-50">
-            <svg className="mt-0.5 h-3 w-3 shrink-0 text-slate-400 transition-transform group-open:rotate-90" viewBox="0 0 12 12"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
-            <span className="flex-1 text-slate-700"><span className="font-medium">{d.metric}</span> — {d.cause}</span>
-            <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-slate-500 uppercase">{d.status}</span>
+          <summary className="flex cursor-pointer list-none items-start gap-2.5 px-5 py-3 text-sm hover:bg-slate-50">
+            <svg className="mt-1 h-3 w-3 shrink-0 text-slate-400 transition-transform group-open:rotate-90" viewBox="0 0 12 12"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
+            <span className="flex-1 leading-relaxed text-slate-700"><span className="font-semibold text-slate-900">{d.metric}</span> — {d.cause}</span>
+            <span className="badge badge-neutral mt-0.5 shrink-0">{d.status}</span>
           </summary>
-          <div className="bg-slate-50/60 px-4 pb-3 pl-9 text-xs text-slate-500">
+          <div className="bg-slate-50/60 px-5 pb-3 pl-10 text-xs text-slate-500">
             <p className="mb-1 text-[11px] text-slate-400">rule {d.ruleId} · {d.decomposition}{d.decomposition === 'single_factor' ? ' (ceteris-paribus, not additive)' : ''}</p>
             {d.drivers.length ? (
               <table className="w-full"><tbody>
@@ -169,17 +169,22 @@ function DiagnosesBlock({ diagnoses }: { diagnoses: Diagnosis[] }) {
 
 // Tier 3 — recommendations (advice with quantified impact from engine figures).
 function RecommendationsBlock({ recs }: { recs: Recommendation[] }) {
-  if (!recs.length) return <p className="px-4 py-6 text-sm text-slate-400">No recommendations — no observed move this period implies an actionable lever (favourable moves don&apos;t generate advice). Nothing fabricated.</p>;
+  if (!recs.length) return <p className="px-5 py-8 text-sm text-slate-400">No recommendations — no observed move this period implies an actionable lever (favourable moves don&apos;t generate advice). Nothing fabricated.</p>;
   return (
     <ul className="divide-y divide-slate-100">
       {recs.map((r, i) => (
-        <li key={i} className="px-4 py-3 text-sm">
-          <div className="flex items-start gap-2">
-            <span className="flex-1 text-slate-700">{r.action}</span>
-            <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-slate-500 uppercase">{r.status}</span>
+        <li key={i} className="px-5 py-3.5 text-sm">
+          <div className="flex items-start gap-2.5">
+            <span className="mt-1.5 h-3.5 w-0.5 shrink-0 rounded-full bg-accent" aria-hidden />
+            <div className="flex-1">
+              <div className="flex items-start gap-2">
+                <span className="flex-1 font-medium text-slate-800">{r.action}</span>
+                <span className="badge badge-neutral mt-0.5 shrink-0">{r.status}</span>
+              </div>
+              <p className="mt-1 text-xs text-slate-500"><span className="font-medium text-slate-600">Impact:</span> {r.quantifiedImpact.basis}</p>
+              <p className="mt-0.5 text-[11px] text-slate-400">rule {r.ruleId} · confidence {r.confidence} · traces {r.quantifiedImpact.traces.join(', ')}</p>
+            </div>
           </div>
-          <p className="mt-1 text-xs text-slate-500">Impact: {r.quantifiedImpact.basis}</p>
-          <p className="mt-0.5 text-[11px] text-slate-400">rule {r.ruleId} · confidence {r.confidence} · traces {r.quantifiedImpact.traces.join(', ')}</p>
         </li>
       ))}
     </ul>
@@ -188,14 +193,17 @@ function RecommendationsBlock({ recs }: { recs: Recommendation[] }) {
 
 // Tier 3 — goal tracking (trajectory vs PLACEHOLDER target, D-013).
 function GoalsBlock({ goals }: { goals: GoalTrack[] }) {
-  const badge = (s: GoalTrack['trackStatus']) => s === 'on_track' ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20' : s === 'off_track' ? 'bg-red-50 text-red-700 ring-red-600/20' : 'bg-slate-100 text-slate-500 ring-slate-400/20';
+  const badge = (s: GoalTrack['trackStatus']) => s === 'on_track' ? 'badge-positive' : s === 'off_track' ? 'badge-negative' : 'badge-neutral';
   return (
     <div className="divide-y divide-slate-100">
-      <p className="bg-amber-50/50 px-4 py-2 text-xs text-amber-700">⚠ Targets are PLACEHOLDER stubs (D-013) — real analyst-entered client goals are a TODO. The tracking logic below is live against the engine.</p>
+      <p className="flex items-start gap-1.5 border-b border-amber-200/60 bg-amber-50/60 px-5 py-2.5 text-xs text-amber-700">
+        <span aria-hidden>⚠</span>
+        <span>Targets are PLACEHOLDER stubs (D-013) — real analyst-entered client goals are a TODO. The tracking logic below is live against the engine.</span>
+      </p>
       {goals.map((g) => (
-        <div key={g.goalId} className="flex items-start gap-2 px-4 py-2.5 text-sm">
-          <span className="flex-1 text-slate-700"><span className="font-medium">{g.metric}</span> <span className="text-slate-400">· {g.detail}</span></span>
-          <span className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase ring-1 ring-inset ${badge(g.trackStatus)}`}>{g.trackStatus.replace('_', ' ')}</span>
+        <div key={g.goalId} className="flex items-start gap-2 px-5 py-3 text-sm">
+          <span className="flex-1 text-slate-700"><span className="font-semibold text-slate-900">{g.metric}</span> <span className="text-slate-400">· {g.detail}</span></span>
+          <span className={`badge shrink-0 ${badge(g.trackStatus)}`}>{g.trackStatus.replace('_', ' ')}</span>
         </div>
       ))}
     </div>
@@ -303,7 +311,7 @@ export default async function MisPage({ params, searchParams }: { params: Promis
           {cf ? (
             <StatementBlock rows={cf} drilldown={drilldown} />
           ) : (
-            <p className="px-4 py-6 text-sm text-slate-400">n/a — needs a prior period (first period in the chain).</p>
+            <p className="px-5 py-8 text-sm text-slate-400">n/a — needs a prior period (first period in the chain).</p>
           )}
         </Section>
 
