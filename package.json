@@ -18,7 +18,9 @@
     "db:seed": "node scripts/seed.mjs",
     "db:seed-user": "node scripts/seed-user.mjs",
     "db:check": "node scripts/db-check.mjs",
-    "db:types": "node scripts/gen-types.mjs > src/lib/database.types.ts"
+    "db:types": "node scripts/gen-types.mjs > src/lib/database.types.ts",
+    "zoho:auth": "tsx scripts/zoho-auth.mts",
+    "zoho:pull": "tsx scripts/zoho-pull.mts"
   },
   "repository": {
     "type": "git",
