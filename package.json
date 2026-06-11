@@ -18,7 +18,8 @@
     "db:seed": "node scripts/seed.mjs",
     "db:seed-user": "node scripts/seed-user.mjs",
     "db:check": "node scripts/db-check.mjs",
-    "db:types": "node scripts/gen-types.mjs > src/lib/database.types.ts"
+    "db:types": "node scripts/gen-types.mjs > src/lib/database.types.ts",
+    "tally:recon": "tsx scripts/tally-recon.mts"
   },
   "repository": {
     "type": "git",
