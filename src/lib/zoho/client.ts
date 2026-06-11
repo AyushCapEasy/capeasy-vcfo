@@ -21,6 +21,8 @@ export type SalesSidePull = {
   estimates: ZohoEstimate[];
   customers: ZohoCustomer[];
   payments: ZohoPayment[];
+  errors: Record<string, string>; // endpoint label → error (a scope/permission failure on one endpoint
+                                  // does NOT abort the others; the pull surfaces what it can + why)
 };
 
 async function zget(cfg: ZohoConfig, token: string, path: string, params: Record<string, string> = {}): Promise<Record<string, unknown>> {
@@ -57,18 +59,43 @@ export async function listOrganizations(cfg: ZohoConfig, token?: string): Promis
   return ((j.organizations as ZohoOrg[] | undefined) ?? []);
 }
 
-/** Pull the full sales-side picture for the configured org. Requires cfg.orgId. */
+/** Fallback account-name source when /chartofaccounts is scope-blocked: the DISTINCT income/sales
+ *  account names referenced by invoice LINE ITEMS (covered by ZohoBooks.invoices.READ). These are the
+ *  real sales-side account names the firm actually uses — the relevant set for a sales-side classifier
+ *  test. Samples up to `limit` invoices (sequential, gentle on rate limits). */
+export async function fetchInvoiceAccountNames(cfg: ZohoConfig, invoiceIds: string[], limit = 60): Promise<ZohoAccount[]> {
+  const token = await getAccessToken(cfg);
+  const seen = new Map<string, ZohoAccount>();
+  for (const id of invoiceIds.filter(Boolean).slice(0, limit)) {
+    try {
+      const j = await zget(cfg, token, `/invoices/${id}`);
+      const inv = j.invoice as { line_items?: { account_id?: string; account_name?: string }[] } | undefined;
+      for (const li of inv?.line_items ?? []) {
+        const name = (li.account_name ?? '').trim();
+        if (name && !seen.has(name)) seen.set(name, { account_id: li.account_id ?? '', account_name: name });
+      }
+    } catch { /* skip an unreadable invoice; keep going */ }
+  }
+  return [...seen.values()];
+}
+
+/** Pull the full sales-side picture for the configured org. Requires cfg.orgId. Resilient: each
+ *  endpoint is attempted independently; a failure is recorded in `errors` and the rest still pull. */
 export async function pullSalesSide(cfg: ZohoConfig): Promise<SalesSidePull> {
   if (!cfg.orgId) throw new Error('BLOCKED — no ZOHO_ORG_ID. Re-run scripts/zoho-auth.mts, or set it in .env.local.');
   const token = await getAccessToken(cfg);
+  const errors: Record<string, string> = {};
+  const tryPull = async <T>(label: string, fn: () => Promise<T[]>): Promise<T[]> => {
+    try { return await fn(); } catch (e) { errors[label] = (e as Error).message; return []; }
+  };
   const [accounts, invoices, estimates, customers, payments] = await Promise.all([
-    zpaged<ZohoAccount>(cfg, token, '/chartofaccounts', 'chartofaccounts'),
-    zpaged<ZohoInvoice>(cfg, token, '/invoices', 'invoices'),
-    zpaged<ZohoEstimate>(cfg, token, '/estimates', 'estimates'),
-    zpaged<ZohoCustomer>(cfg, token, '/contacts', 'contacts', { contact_type: 'customer' }),
-    zpaged<ZohoPayment>(cfg, token, '/customerpayments', 'customerpayments'),
+    tryPull<ZohoAccount>('chartofaccounts', () => zpaged(cfg, token, '/chartofaccounts', 'chartofaccounts')),
+    tryPull<ZohoInvoice>('invoices', () => zpaged(cfg, token, '/invoices', 'invoices')),
+    tryPull<ZohoEstimate>('estimates', () => zpaged(cfg, token, '/estimates', 'estimates')),
+    tryPull<ZohoCustomer>('customers', () => zpaged(cfg, token, '/contacts', 'contacts', { contact_type: 'customer' })),
+    tryPull<ZohoPayment>('payments', () => zpaged(cfg, token, '/customerpayments', 'customerpayments')),
   ]);
   const orgs = await listOrganizations(cfg, token).catch(() => []);
   const org = orgs.find((o) => o.organization_id === cfg.orgId) ?? orgs[0] ?? null;
-  return { org, accounts, invoices, estimates, customers, payments };
+  return { org, accounts, invoices, estimates, customers, payments, errors };
 }

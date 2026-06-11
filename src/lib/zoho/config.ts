@@ -38,10 +38,14 @@ export function readZohoConfig(env: Record<string, string | undefined> = process
   return { dc, clientId, clientSecret, refreshToken, orgId };
 }
 
-/** Least-privilege READ scopes for the sales-side pull (chart of accounts, invoices, quotes,
- *  customers/receivables, payments). Used when generating the Self Client grant code. */
+/** Least-privilege READ scopes for the sales-side pull. Used when generating the Self Client grant
+ *  code. NOTE: the first grant used only settings.READ for chart-of-accounts and Zoho returned
+ *  code 57 ("not authorized") on /chartofaccounts — that endpoint sits in the Accountant module, so
+ *  `ZohoBooks.accountants.READ` is added here. invoices/estimates/contacts/customerpayments READ
+ *  all worked on the first grant. Re-generate the grant with this full set to unblock chart-of-accounts. */
 export const ZOHO_SCOPES = [
-  'ZohoBooks.settings.READ',         // chart of accounts, organization
+  'ZohoBooks.settings.READ',         // organization, taxes
+  'ZohoBooks.accountants.READ',      // chart of accounts (fixes the code-57 block)
   'ZohoBooks.invoices.READ',
   'ZohoBooks.estimates.READ',        // quotes
   'ZohoBooks.contacts.READ',         // customers / receivables
