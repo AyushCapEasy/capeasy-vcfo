@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { IBM_Plex_Sans, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
+// Redesign typography (m-redesign): IBM Plex Sans for the UI, Source Serif 4 for figures/headings.
+const plexSans = IBM_Plex_Sans({ variable: "--font-plex-sans", weight: ["400", "500", "600", "700"], subsets: ["latin"], display: "swap" });
+const sourceSerif = Source_Serif_4({ variable: "--font-source-serif", weight: ["400", "500", "600", "700"], subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
   title: "CapEasy vCFO",
@@ -15,8 +17,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
-      <body className="font-sans min-h-full flex flex-col bg-slate-50 text-slate-900">{children}</body>
+    <html lang="en" className={`${plexSans.variable} ${sourceSerif.variable} h-full antialiased`}>
+      {/* Warm-neutral canvas + ink come from the design tokens (globals.css). */}
+      <body className="font-sans min-h-full flex flex-col bg-canvas text-ink">{children}</body>
     </html>
   );
 }

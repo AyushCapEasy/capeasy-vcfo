@@ -9,13 +9,16 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ============================================================================================
-   CapEasy vCFO — Design System (V0, visual-revamp)
-   North star: financial software a founder puts in front of an investor — credible, precise,
-   institutional (Bloomberg / top-tier audit / FT restraint). Color carries financial MEANING, not
-   decoration. This block is the single source of design truth; screens compose from it.
+   CapEasy vCFO — Design System (V1 redesign, m-redesign — warm-neutral, Claude Design canonical)
+   Supersedes the V0 cool-slate system. Warm off-white surfaces, IBM Plex Sans + Source Serif 4,
+   blue #1E4FA8 primary, restrained green for favourable. Color carries financial MEANING, not
+   decoration. This block is the single source of design truth; screens compose from it. Component
+   primitives below still use slate utilities — they are migrated to the warm tokens screen-by-screen
+   (Step 1 of the redesign adopts tokens + fonts only; no screen restyled yet).
    ============================================================================================ */
 @theme {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-source-serif), ui-serif, Georgia, "Times New Roman", serif;
 
   /* Brand */
   --color-primary: #1e4fa8;
@@ -25,17 +28,19 @@
   --color-accent: #f08025;
   --color-accent-foreground: #ffffff;
 
-  /* Neutrals (cool grey — structure & text hierarchy) */
-  --color-ink: #0f172a;     /* slate-900 — headings, primary figures */
-  --color-body: #334155;    /* slate-700 — body text */
-  --color-muted: #64748b;   /* slate-500 — secondary text */
-  --color-faint: #94a3b8;   /* slate-400 — tertiary / captions */
-  --color-line: #e2e8f0;    /* slate-200 — borders */
-  --color-hair: #f1f5f9;    /* slate-100 — hairline dividers */
-  --color-canvas: #f8fafc;  /* slate-50 — app background behind white surfaces */
+  /* Neutrals (WARM grey — redesign; supersedes the cool slate) */
+  --color-ink: #191c20;          /* headings, primary figures */
+  --color-body: #5a636e;         /* body text */
+  --color-muted: #939aa4;        /* secondary text */
+  --color-faint: #aeb4bc;        /* tertiary / captions */
+  --color-line: #e7e7e1;         /* borders (warm) */
+  --color-line-strong: #d7d7d0;  /* stronger divider */
+  --color-hair: #f2f2ec;         /* hairline dividers (warm) */
+  --color-canvas: #fbfbf8;       /* warm off-white — app background behind white surfaces */
 
   /* Semantic — reserved for FINANCIAL meaning only (favorable/unfavorable, +/−) */
-  --color-positive: #15803d;     /* emerald-700 */
+  --color-positive: #1c7a50;     /* redesign green */
+  --color-positive-50: #eaf4ee;  /* positive wash — tints / backgrounds */
   --color-negative: #b91c1c;     /* red-700 */
   --color-warning: #b45309;      /* amber-700 — UNVERIFIED / pending-CA flags */
 
@@ -46,8 +51,21 @@
 
 :root {
   color-scheme: light; /* render native controls (select popups, date pickers, scrollbars) in light mode */
-  --background: #ffffff;
-  --foreground: #0f172a;
+  --background: #ffffff;          /* white surfaces sit on the warm --color-canvas page */
+  --foreground: #191c20;          /* warm ink */
+
+  /* Prototype token aliases (Claude Design variable names) → canonical tokens, so screen restyles can
+     reuse the mockup's variable names verbatim for pixel fidelity. */
+  --pri: var(--color-primary);
+  --ink: var(--color-ink);
+  --ink2: var(--color-body);
+  --ink3: var(--color-muted);
+  --line: var(--color-line);
+  --line2: var(--color-line-strong);
+  --surface: #ffffff;
+  --surface2: var(--color-canvas);
+  --pos: var(--color-positive);
+  --posw: var(--color-positive-50);
 }
 
 @layer base {
