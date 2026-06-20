@@ -1,7 +1,7 @@
 // src/lib/tally/index.ts — Route C (Tally TB → MIS) public surface. PURE. parse → classify → build
 // statements; plus reconcile() against a client's audited statements that DISTINGUISHES engine gaps
 // (we computed something wrong) from audit-adjustment gaps (year-end auditor entries not in the books).
-import { parseTallyTB, parseTallyMasters, parseTallyDayBook, type TallyParse, type TallyLedger } from './parse';
+import { parseTallyTB, parseTallyMasters, parseTallyDayBook, parseTallyOpeningStock, type TallyParse, type TallyLedger } from './parse';
 import { classifyLedgers, type LedgerDecision } from './classify';
 import { buildStatements, type Statements } from './statements';
 import { CATEGORY_BY_CODE } from '../decision';
@@ -30,9 +30,13 @@ export type ReconstructExportsOptions = {
   /** Credit closing stock (Stock-in-Hand balance) to COGS so inventory businesses reconcile (GAP-1).
    *  Default true. Set false for books that already booked closing stock as a ledger entry. */
   creditClosingStock?: boolean;
-  /** Opening stock for a continuing inventory business (the export only carries the closing balance). */
+  /** Opening stock (prior year's closing) for a CONTINUING inventory business. When omitted, it is
+   *  derived from `<STOCKITEM>` opening values if the company keeps item-wise inventory, else assumed
+   *  nil (correct for a first-year business; flagged otherwise). COGS = opening + purchases − closing. */
   openingStockPaise?: number;
 };
+
+export type OpeningStockSource = 'operator-supplied' | 'stock-item-masters' | 'assumed-nil';
 
 export function reconstructFromTallyExports(mastersXml: string, dayBookXml = '', opts: ReconstructExportsOptions = {}): TallyReconstruction {
   const creditClosingStock = opts.creditClosingStock ?? true;
@@ -61,15 +65,29 @@ export function reconstructFromTallyExports(mastersXml: string, dayBookXml = '',
   if (postedOnly) warnings.push(`${postedOnly} ledger(s) posted in the Day Book are absent from Masters — classified by name only.`);
   if (Math.abs(db.postingsDrPaise.size ? db.postingSumPaise : 0) > 100) warnings.push(`Day-book postings do not net to zero (Σ ${db.postingSumPaise} paise) — vouchers may be unbalanced.`);
 
+  // Opening stock (GAP-1, continuing-business case): operator value wins; else derive from stock-item
+  // masters; else assume nil. COGS = opening + purchases − closing in all three cases.
+  const derived = parseTallyOpeningStock(mastersXml);
+  const openingStockPaise = opts.openingStockPaise ?? derived.openingStockPaise; // 0 if neither supplied nor derivable
+  const openingStockSource: OpeningStockSource =
+    opts.openingStockPaise != null ? 'operator-supplied' : (derived.openingStockPaise ? 'stock-item-masters' : 'assumed-nil');
+
   const parse: TallyParse = { format: 'masters_daybook', ledgers, withGroup: m.withGroup, warnings };
   const decisions = classifyLedgers(ledgers);
-  const statements = buildStatements(decisions, { creditClosingStock, openingStockPaise: opts.openingStockPaise });
+  const statements = buildStatements(decisions, { creditClosingStock, openingStockPaise });
 
   // GAP-1 honest degradation: never a silent wrong number.
   const hasCogs = statements.pl.lines.some((l) => l.category === 'cogs');
   const hasInventory = statements.bs.lines.some((l) => l.category === 'inventory' && l.valuePaise !== 0);
-  if (creditClosingStock && statements.pl.closingStockCreditPaise !== 0) {
-    warnings.push(`Closing stock ₹${Math.round(statements.pl.closingStockCreditPaise / 100).toLocaleString('en-IN')} credited to COGS (assumes nil opening stock — supply openingStockPaise for a continuing inventory business).`);
+  const inr = (p: number) => '₹' + Math.round(p / 100).toLocaleString('en-IN');
+  if (creditClosingStock && hasInventory) {
+    if (openingStockSource === 'operator-supplied') {
+      warnings.push(`COGS = opening ${inr(openingStockPaise)} (operator-supplied) + purchases − closing stock.`);
+    } else if (openingStockSource === 'stock-item-masters') {
+      warnings.push(`Opening stock ${inr(openingStockPaise)} derived from ${derived.itemsWithOpening} stock-item master(s); COGS = opening + purchases − closing stock.`);
+    } else {
+      warnings.push('Opening stock not provided and not derivable from stock-item masters — ASSUMED NIL. Correct for a FIRST-YEAR business; for a CONTINUING inventory business COGS is misstated by the prior-year closing stock. Supply openingStockPaise (last year’s closing stock).');
+    }
   } else if (hasCogs && !hasInventory) {
     warnings.push('Inventory/COGS present but no closing-stock (Stock-in-Hand) balance found — COGS may be overstated for an inventory business; supply a Stock Summary or closing-stock figure.');
   }
