@@ -46,6 +46,16 @@
 - **Worked (Orafor Route-C reality-check, real client, UNVERIFIED):** `TRADEMARK EXP` (₹13,060) and `STARTUP EXP` (₹9,340) sit under group "Indirect Expenses" → expensed. The name-classifier wanted `intangibles` / preliminary-expense asset; the conflict detector flagged both (group won). An auditor **may legitimately capitalise** trademark registration / preliminary incorporation costs (Ind AS / Sch III) and amortise — in which case books-vs-audited will differ on these lines. **This is a judgment call, not an engine bug:** is "trust the client's group placement, surface the conflict" the right default, or should named-intangible-under-expense rows be routed to founder-confirm?
 - **Verdict:** ☐ ok ☐ needs-change ☐ note — ____________________________________________
 
+### A7 · Director remuneration — which P&L line? (net-neutral classification, not a bug)
+- **Assumes:** a ledger whose name reads as salary/remuneration (e.g. "Director Salary") classifies to **`employee_benefits`** — including directors' pay. The total expense is unaffected wherever it sits; only the sub-line differs.
+- **Worked (Orafor Route-C, real client, UNVERIFIED):** "Director Salary" ₹20,65,000 → engine `employee_benefits` (total 29,36,518). The **audited** P&L places it under **"Other expenses"** (`admin_other_opex`), leaving employee_benefits = 8,71,518 (the non-director "Salary Payable" only). Net-neutral: the ₹20,65,000 just moves employee_benefits → other-expenses. Both presentations are defensible under Schedule III (director remuneration is often disclosed separately). **Which line should director remuneration sit on by default?**
+- **Verdict:** ☐ ok ☐ needs-change ☐ note — ____________________________________________
+
+### A8 · Director / related-party loan — current vs non-current (classification, amount unaffected)
+- **Assumes:** a ledger under Tally group "Loans (Liability)" classifies to **`long_term_borrowings`** (non-current) by default. The group carries no repayment-term signal, so the engine cannot see whether the loan is repayable on demand.
+- **Worked (Orafor, real client, UNVERIFIED):** "JATIN DIRECTOR LOAN" ₹49,79,756 → engine **non-current**; the **audited** BS shows it as a **current** liability (short-term borrowing / repayable on demand). The **amount ties exactly**; only the current/non-current split differs. Per Schedule III, a director loan with no fixed term is typically current. **Should the engine default director/related-party loans (or "Loans (Liability)" with no term data) to current, or keep non-current and flag for confirm?**
+- **Verdict:** ☐ ok ☐ needs-change ☐ note — ____________________________________________
+
 ---
 
 ## B. Observation thresholds (Tier 1 — what counts as "notable")
