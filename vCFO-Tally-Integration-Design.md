@@ -34,3 +34,33 @@ The PoC proved bank+GST cannot reconstruct accrual financials. The accrual layer
 
 ## DELIVERABLE OF NEXT STEP
 Agent answers the research questions (which export, what format) FIRST and reports — before writing any parser. Then Route C parse against one real client's Tally export, classified through the decision engine, compared to that client's audited statements (the reconciliation test, now on the RIGHT source — accrual data, not bank).
+
+---
+
+## EMPIRICAL FINDINGS — Route C on real client data (Orafor Clothing Pvt Ltd, FY 2024-04-09 → 2025-03-31)
+**Status:** real-client reality-check (D-007/D-014: in-memory, gitignored `.client-data.local/`, never persisted/committed). All ₹ figures are the **Tally reconstruction, UNVERIFIED** pending the operator's audited answer key. Run via `.client-data.local/_recon.mts` (gitignored).
+
+### What the real export actually is (answers the RESEARCH QUESTIONS above)
+- The client gave **two `Import Data / "All Masters"` XML files**, not a single TB:
+  - **Masters** (`Master- ORAFOR.xml`): 660 `<LEDGER>` with `<PARENT>` groups + a balance field. **No `<CLOSINGBALANCE>` tag anywhere.**
+  - **Day Book** (`Transactions ORAFOR.xml`): 1,752 vouchers / 5,381 postings. Also no closing balances.
+- **No Tally export here carries a ready-made closing-balance TB.** The closing TB must be **derived**.
+- **The master `<OPENINGBALANCE>` field is the period CLOSING balance, not an opening to add** (proven: `JATIN DIRECTOR LOAN` field ₹49,79,756 == the sum of its 17 day-book receipts that year — an opening cannot equal current-year flows). Of 158 ledgers with a field, 48 are active (field == Σpostings) and 110 are dormant carried balances (postings = ₹0); **no ledger has both**. ⇒ correct rule: **closing = master field where present, else day-book Σpostings.** `opening + postings` double-counts (gave director loan ₹99.6L instead of ₹49.8L).
+- Sign convention (confirmed both files): **debit = negative** (`ISDEEMEDPOSITIVE=Yes` ↔ negative `<AMOUNT>`; same for `<OPENINGBALANCE>`). Day-book postings cross-foot to **₹0** (every voucher; parse validated).
+- **Encoding/shape reality-check for the parser:** these real exports are **UTF-16 LE**, and the accrual chart arrives as **`All Masters` + `Day Book`**, not the `<LEDGER><PARENT><CLOSINGBALANCE>` DATA shape `src/lib/tally/parse.ts` assumes (it reads `utf8` and expects `<CLOSINGBALANCE>`). The production Route-C parser must (a) detect/decode UTF-16, and (b) support the masters-field-as-closing + day-book derivation, not just a pre-computed TB.
+
+### ⚠ GAP-1 (PRIORITY ENGINE GAP) — closing stock lives in Tally's INVENTORY subsystem, not the ledgers
+For a stock-holding business, **closing stock is held as inventory valuation (stock items × rates), with NO ledger posting**. Orafor's `Opening Stock` (Stock-in-Hand) ledger carries **₹43,85,970** but has **zero day-book postings**. Consequence of a ledger-only reconstruction:
+- **COGS is overstated** (full purchases ₹94,80,469 with no closing-stock credit) → a **fake ₹46.4L net loss** vs an expected ~₹2.5L.
+- The derived closing TB is **off by exactly ₹62,39,070 = ₹18,53,100 (unreconciled opening-balance difference in the masters) + ₹43,85,970 (closing stock with no ledger counter-entry)**.
+- **This is structural, not a parse error, and it affects EVERY inventory business (retail / manufacturing / wholesale)** — a large part of the target market. A ledger-only Route-C pipeline cannot produce a correct P&L/BS for them.
+- **Required:** before Route C can handle stock-holding companies, the reconstruction must obtain closing stock from **Tally's inventory data** (`<ALLINVENTORYENTRIES.LIST>` / stock summary / Stock-in-Hand ledger value) **or accept it as an explicit operator input**, and apply the closing-stock adjustment (credit COGS / hold as current asset). Until then, flag stock-holders explicitly. → tracked as a DevDoc backlog item.
+
+### GAP-2 (✅ APPLIED 2026-06-20, operator-approved) — "Duties & Taxes" group alias
+`src/lib/tally/groups.ts` keyed only `'duties and taxes'`, but Tally's real group **"Duties & Taxes"** normalises (`&`→space) to **`"duties taxes"`** → 12 GST ledgers fell to **unclassified**, dropping net GST from the BS. **Fix applied:** added `'duties taxes': 'statutory_dues'` alias. Result: 62/62 tests green; GST now lands on the BS as **Statutory dues (net −₹46,951 input credit)**; auto-coverage 84.8% → **91.1%**; unclassified 13 → 1 (only "Profit & Loss A/c", which is correct). Still TODO: audit any other default Tally groups containing `&`. (Committed on `m-tally`.)
+
+### Reconstruction snapshot (UNVERIFIED — for the next-turn audited diff)
+- Coverage (191 balance-carrying ledgers): **84.8% auto / 15.2% flagged**; 15 group-authoritative name↔group conflicts.
+- P&L: Revenue ₹87,02,534 · Expenses ₹1,33,42,368 · **Net −₹46,39,834 (PRE-closing-stock)**.
+- BS: Assets ₹79,87,140 · Liabilities ₹63,26,372 · Equity −₹1,53,864; director loan ₹49,79,756; inventory ₹43,85,970.
+- **Next-turn diff protocol (operator-set):** apply the **₹43.86L closing-stock credit to COGS first** (moves P&L −₹46L → ~−₹2.5L), then classify diffs as (a) clean match, (b) audit-adjustment gap [closing stock, opening-balance difference, capitalization calls — expected], (c) **engine gap [the real bug signal]**. Only (c) is a fix.

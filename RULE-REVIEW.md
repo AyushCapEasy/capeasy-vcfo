@@ -41,6 +41,11 @@
 - **Worked (Acme):** Jun opening RE ₹21,19,500 = May opening ₹18,22,500 + May NP ₹2,97,000.
 - **Verdict (dividends=0 convention):** ☐ ok ☐ needs-change ☐ note — __________________________
 
+### A6 · Capitalisation vs expensing of intangibles / preliminary costs (group-authoritative override)
+- **Assumes:** the Tally **group is authoritative**, so a ledger the client filed under "Indirect Expenses" is **expensed to P&L** even when its *name* reads like a capital asset — the name-classifier's "this is an intangible/asset" guess loses to the group (correct per source-type-dominates-name). The engine does **not** second-guess the client's capitalise-vs-expense decision.
+- **Worked (Orafor Route-C reality-check, real client, UNVERIFIED):** `TRADEMARK EXP` (₹13,060) and `STARTUP EXP` (₹9,340) sit under group "Indirect Expenses" → expensed. The name-classifier wanted `intangibles` / preliminary-expense asset; the conflict detector flagged both (group won). An auditor **may legitimately capitalise** trademark registration / preliminary incorporation costs (Ind AS / Sch III) and amortise — in which case books-vs-audited will differ on these lines. **This is a judgment call, not an engine bug:** is "trust the client's group placement, surface the conflict" the right default, or should named-intangible-under-expense rows be routed to founder-confirm?
+- **Verdict:** ☐ ok ☐ needs-change ☐ note — ____________________________________________
+
 ---
 
 ## B. Observation thresholds (Tier 1 — what counts as "notable")

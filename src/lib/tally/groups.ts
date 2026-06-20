@@ -27,7 +27,7 @@ const GROUP_TO_CATEGORY: Record<string, string> = {
   'bank od a c': 'short_term_borrowings', 'bank occ a c': 'short_term_borrowings', 'bank od cc': 'short_term_borrowings',
   'current liabilities': 'accrued_other_current_liabilities',
   'sundry creditors': 'trade_payables',
-  'duties and taxes': 'statutory_dues',
+  'duties and taxes': 'statutory_dues', 'duties taxes': 'statutory_dues', // "Duties & Taxes" → norm "duties taxes" (& → space)
   'provisions': 'provisions',
   // BS — assets
   'fixed assets': 'ppe',
