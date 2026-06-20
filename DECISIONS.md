@@ -238,6 +238,14 @@
 - **Labelling:** engine output that clears (a) is **CONSISTENCY-CHECKED**; **VERIFIED** is reserved for what ALSO clears (c). Watermark stays **ON** (off-switch deliberate, never default). Tiers 1–3 (M8) are built on not-yet-VERIFIED numbers and must be re-validated after the rule-review.
 - **Reversible?** The pivot is a Vision-level direction; the new artifacts (battery, harness, `RULE-REVIEW.md`) are additive. Reinstating a per-client diff would require an explicit re-pivot.
 
+### D-014 · D-007 REVERTED — real data permitted in `capeasy-vcfo`; data-separation DEFERRED but a MANDATORY, un-droppable launch blocker
+- **Date:** 2026-06-11 · **Milestone:** M-Zoho (first real integration). · **Operator-directed.** Source: `vCFO-Zoho-Integration-Spec.md` (now tracked in-repo).
+- **Supersedes D-007's "fake data only" rule** (D-007 had said `capeasy-vcfo` is PERMANENTLY fake Acme/Globex only). That is now **lifted**: **real data is permitted in `capeasy-vcfo`** so the first real integration can be built, tested, and proven (KISS — build/prove, then secure).
+- **Hard limit on scope of "real":** the **firm's OWN Zoho Books org first** — **NOT multiple clients' data.** Client data comes **only after** data-separation exists.
+- **🔴 UN-DROPPABLE LAUNCH BLOCKER (deferred, NOT gone):** before **any client-facing launch**, real client data MUST live in a **SEPARATE, deliberately-provisioned, RLS-security-reviewed production project** — not this dev project. This is **deferred, not removed**; it must be tracked and cleared before launch. Do not let "it works in capeasy-vcfo" become the reason to ship client data from here.
+- **Non-negotiables that SURVIVE this reversal (irreversible-harm guards, reaffirmed):** Vercel **auth wall stays ON** (no real data on a public URL); **watermark stays ON**; **secrets only in gitignored env** — OAuth client ID/secret + refresh/access tokens **NEVER** in chat, tracked files, or commits (D-009 holds).
+- **Reversible?** The launch blocker is **not** reversible-away — it is the deliberate gate. The dev-project "real data allowed" relaxation is intentional and scoped to own-firm pre-launch work.
+
 ---
 
 ## OPEN — needs Ayush ([ADD DETAIL]) — carried from Bible §11
