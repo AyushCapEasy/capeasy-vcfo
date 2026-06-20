@@ -19,6 +19,7 @@
     "db:seed-user": "node scripts/seed-user.mjs",
     "db:check": "node scripts/db-check.mjs",
     "db:types": "node scripts/gen-types.mjs > src/lib/database.types.ts",
+    "tally:recon": "tsx scripts/tally-recon.mts",
     "zoho:auth": "tsx scripts/zoho-auth.mts",
     "zoho:pull": "tsx scripts/zoho-pull.mts"
   },

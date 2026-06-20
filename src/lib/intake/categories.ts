@@ -14,7 +14,7 @@ export const CATEGORY_SYNONYMS: Record<string, string[]> = {
   professional_fees: ['legal', 'professional', 'consultancy', 'consulting', 'audit fee', 'retainer', 'advisory'],
   admin_other_opex: ['office', 'admin', 'administrative', 'printing', 'stationery', 'travel', 'conveyance', 'miscellaneous expense', 'general expense'],
   depreciation_amortisation: ['depreciation', 'amortisation', 'amortization', 'dep', 'd&a'],
-  finance_costs: ['interest', 'finance cost', 'bank charges', 'interest on loan', 'borrowing cost'],
+  finance_costs: ['interest', 'finance cost', 'bank charges', 'interest on loan', 'borrowing cost', 'loan interest', 'loan int', 'int on loan'],
   tax_expense: ['tax', 'income tax', 'provision for tax', 'current tax', 'deferred tax'],
   cash_bank: ['cash', 'bank', 'current account', 'savings account', 'hdfc', 'icici', 'axis', 'sbi', 'petty cash', 'cash in hand', 'cash at bank'],
   trade_receivables: ['receivable', 'debtor', 'sundry debtors', 'accounts receivable', 'ar', 'trade debtors'],
