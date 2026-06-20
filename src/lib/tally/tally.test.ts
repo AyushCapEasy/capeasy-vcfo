@@ -200,3 +200,39 @@ test('GAP-3 two-file masters+daybook (UTF-16): field-as-closing + day-book posti
   assert.equal(s.checks.tbBalanced, true);
   assert.equal(s.checks.plTiesToBs, true);
 });
+
+// GAP-1 — closing stock lives as an UNBOOKED Stock-in-Hand balance (no P&L counter-entry, like Orafor).
+// Crediting it to COGS turns gross purchases into cost of materials CONSUMED and makes the P&L articulate
+// with the BS. Synthetic (committable): ₹20,000 closing stock, ₹30,000 purchases, ₹50,000 sales.
+test('GAP-1 closing-stock credit: COGS = purchases − closing stock, statements articulate', () => {
+  const MASTERS = `<ENVELOPE><BODY>
+<LEDGER NAME="Closing Stock"><PARENT>Stock-in-Hand</PARENT><OPENINGBALANCE>-20000.00</OPENINGBALANCE></LEDGER>
+<LEDGER NAME="Sales"><PARENT>Sales Accounts</PARENT></LEDGER>
+<LEDGER NAME="Purchases"><PARENT>Purchase Accounts</PARENT></LEDGER>
+<LEDGER NAME="Bank"><PARENT>Bank Accounts</PARENT></LEDGER>
+</BODY></ENVELOPE>`;
+  const DAYBOOK = `<ENVELOPE><BODY>
+<VOUCHER><VOUCHERTYPENAME>Sales</VOUCHERTYPENAME>
+  <ALLLEDGERENTRIES.LIST><LEDGERNAME>Bank</LEDGERNAME><AMOUNT>-50000.00</AMOUNT></ALLLEDGERENTRIES.LIST>
+  <ALLLEDGERENTRIES.LIST><LEDGERNAME>Sales</LEDGERNAME><AMOUNT>50000.00</AMOUNT></ALLLEDGERENTRIES.LIST>
+</VOUCHER>
+<VOUCHER><VOUCHERTYPENAME>Purchase</VOUCHERTYPENAME>
+  <ALLLEDGERENTRIES.LIST><LEDGERNAME>Purchases</LEDGERNAME><AMOUNT>-30000.00</AMOUNT></ALLLEDGERENTRIES.LIST>
+  <ALLLEDGERENTRIES.LIST><LEDGERNAME>Bank</LEDGERNAME><AMOUNT>30000.00</AMOUNT></ALLLEDGERENTRIES.LIST>
+</VOUCHER>
+</BODY></ENVELOPE>`;
+  const cogs = (s: { pl: { lines: { category: string; valuePaise: number }[] } }) => s.pl.lines.find((l) => l.category === 'cogs')!.valuePaise;
+
+  // OFF: gross purchases, fabricated higher COGS (the bug GAP-1 fixes).
+  const raw = reconstructFromTallyExports(MASTERS, DAYBOOK, { creditClosingStock: false }).statements;
+  assert.equal(cogs(raw), 3000000);            // ₹30,000 gross purchases
+  assert.equal(raw.pl.netProfitPaise, 2000000); // ₹20,000 (overstated COGS → understated profit)
+
+  // ON (default): cost of materials consumed = ₹30,000 − ₹20,000 = ₹10,000; profit ₹40,000.
+  const adj = reconstructFromTallyExports(MASTERS, DAYBOOK).statements;
+  assert.equal(cogs(adj), 1000000);            // ₹10,000 consumed
+  assert.equal(adj.pl.netProfitPaise, 4000000); // ₹40,000
+  assert.equal(adj.pl.closingStockCreditPaise, 2000000); // ₹20,000 credited
+  assert.equal(adj.bs.lines.find((l) => l.category === 'inventory')!.valuePaise, 2000000); // stock still on BS
+  assert.equal(adj.checks.plTiesToBs, true);   // crediting the unbooked stock makes P&L articulate with BS
+});

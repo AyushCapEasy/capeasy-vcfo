@@ -10,14 +10,21 @@ const isCreditNatural = (group: string) => CREDIT_NATURAL.has(group);
 
 export type StmtLine = { category: string; label: string; group: string; statement: 'pl' | 'bs'; valuePaise: number };
 export type Statements = {
-  pl: { lines: StmtLine[]; revenuePaise: number; expensesPaise: number; pbtPaise: number; taxPaise: number; netProfitPaise: number };
+  pl: { lines: StmtLine[]; revenuePaise: number; expensesPaise: number; pbtPaise: number; taxPaise: number; netProfitPaise: number; closingStockCreditPaise: number };
   bs: { lines: StmtLine[]; assetsPaise: number; liabilitiesPaise: number; equityPaise: number };
   checks: { tbDebitPaise: number; tbCreditPaise: number; tbBalanced: boolean; assetsMinusLEPaise: number; netProfitPaise: number; plTiesToBs: boolean };
   conflicts: LedgerDecision[];
   unclassified: LedgerDecision[];
 };
 
-export function buildStatements(decisions: LedgerDecision[]): Statements {
+// GAP-1: closing stock lives in Tally's inventory subsystem, carried as the Stock-in-Hand (inventory)
+// ledger BALANCE with no P&L counter-entry. A ledger-only reconstruction therefore overstates COGS
+// (gross purchases, no closing-stock credit) and fabricates a loss. When enabled, credit the closing
+// inventory balance to COGS so the P&L shows cost of materials CONSUMED (Purchases − ΔStock). Assumes
+// nil opening stock unless `openingStockPaise` is supplied.
+export type BuildStatementsOptions = { creditClosingStock?: boolean; openingStockPaise?: number };
+
+export function buildStatements(decisions: LedgerDecision[], opts: BuildStatementsOptions = {}): Statements {
   // sum signed debit-minus-credit per category
   const netDr = new Map<string, number>();
   let tbDr = 0, tbCr = 0;
@@ -40,14 +47,26 @@ export function buildStatements(decisions: LedgerDecision[]): Statements {
   const linesFor = (codes: string[]) => codes.map(lineFor).filter((x): x is StmtLine => x !== null);
   const sum = (codes: string[]) => codes.reduce((s, c) => s + valueOf(c), 0);
 
+  // GAP-1 closing-stock credit: closing inventory (Stock-in-Hand balance) − opening stock, credited to COGS.
+  const closingInventoryPaise = Math.max(0, valueOf('inventory'));
+  const closingStockCreditPaise = opts.creditClosingStock ? closingInventoryPaise - (opts.openingStockPaise ?? 0) : 0;
+
   // P&L
   const incomeCats = cats((g, s) => s === 'pl' && g === 'income');
   const expenseCats = cats((g, s) => s === 'pl' && g !== 'income');
   const revenuePaise = sum(incomeCats);
-  const expensesPaise = sum(expenseCats);
+  const expensesPaise = sum(expenseCats) - closingStockCreditPaise; // closing stock credited → cost of materials consumed
   const taxPaise = valueOf('tax_expense');
   const pbtPaise = revenuePaise - (expensesPaise - taxPaise);
   const netProfitPaise = revenuePaise - expensesPaise;
+
+  // present the credit on the COGS line (cost of materials consumed = gross purchases − closing stock)
+  const plLines = linesFor([...incomeCats, ...expenseCats]);
+  if (closingStockCreditPaise !== 0) {
+    const cogsLine = plLines.find((l) => l.category === 'cogs');
+    if (cogsLine) cogsLine.valuePaise -= closingStockCreditPaise;
+    else plLines.push({ category: 'cogs', label: CATEGORY_BY_CODE['cogs'].name, group: 'direct_costs', statement: 'pl', valuePaise: -closingStockCreditPaise });
+  }
 
   // BS
   const assetCats = cats((g) => g === 'current_assets' || g === 'non_current_assets');
@@ -59,7 +78,7 @@ export function buildStatements(decisions: LedgerDecision[]): Statements {
 
   const assetsMinusLEPaise = assetsPaise - (liabilitiesPaise + equityPaise);
   return {
-    pl: { lines: linesFor([...incomeCats, ...expenseCats]), revenuePaise, expensesPaise, pbtPaise, taxPaise, netProfitPaise },
+    pl: { lines: plLines, revenuePaise, expensesPaise, pbtPaise, taxPaise, netProfitPaise, closingStockCreditPaise },
     bs: { lines: linesFor([...assetCats, ...liabCats, ...equityCats]), assetsPaise, liabilitiesPaise, equityPaise },
     checks: {
       tbDebitPaise: tbDr, tbCreditPaise: tbCr, tbBalanced: Math.abs(tbDr - tbCr) < 100,

@@ -26,7 +26,16 @@ export function reconstructFromTallyXml(xml: string): TallyReconstruction {
  * field where present, else Σ day-book postings (no ledger has both). Pass strings already decoded via
  * `decodeTallyXml` (BOM-aware). Works for any Tally export — tested against Orafor, hardcodes nothing.
  */
-export function reconstructFromTallyExports(mastersXml: string, dayBookXml = ''): TallyReconstruction {
+export type ReconstructExportsOptions = {
+  /** Credit closing stock (Stock-in-Hand balance) to COGS so inventory businesses reconcile (GAP-1).
+   *  Default true. Set false for books that already booked closing stock as a ledger entry. */
+  creditClosingStock?: boolean;
+  /** Opening stock for a continuing inventory business (the export only carries the closing balance). */
+  openingStockPaise?: number;
+};
+
+export function reconstructFromTallyExports(mastersXml: string, dayBookXml = '', opts: ReconstructExportsOptions = {}): TallyReconstruction {
+  const creditClosingStock = opts.creditClosingStock ?? true;
   const m = parseTallyMasters(mastersXml);
   const db = dayBookXml
     ? parseTallyDayBook(dayBookXml)
@@ -54,7 +63,18 @@ export function reconstructFromTallyExports(mastersXml: string, dayBookXml = '')
 
   const parse: TallyParse = { format: 'masters_daybook', ledgers, withGroup: m.withGroup, warnings };
   const decisions = classifyLedgers(ledgers);
-  return { parse, decisions, statements: buildStatements(decisions) };
+  const statements = buildStatements(decisions, { creditClosingStock, openingStockPaise: opts.openingStockPaise });
+
+  // GAP-1 honest degradation: never a silent wrong number.
+  const hasCogs = statements.pl.lines.some((l) => l.category === 'cogs');
+  const hasInventory = statements.bs.lines.some((l) => l.category === 'inventory' && l.valuePaise !== 0);
+  if (creditClosingStock && statements.pl.closingStockCreditPaise !== 0) {
+    warnings.push(`Closing stock ₹${Math.round(statements.pl.closingStockCreditPaise / 100).toLocaleString('en-IN')} credited to COGS (assumes nil opening stock — supply openingStockPaise for a continuing inventory business).`);
+  } else if (hasCogs && !hasInventory) {
+    warnings.push('Inventory/COGS present but no closing-stock (Stock-in-Hand) balance found — COGS may be overstated for an inventory business; supply a Stock Summary or closing-stock figure.');
+  }
+
+  return { parse, decisions, statements };
 }
 
 // ----- Reconciliation against the audited statements (the real proof) -----
