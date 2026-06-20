@@ -90,6 +90,52 @@ test('reconcile distinguishes engine gaps from audit adjustments', () => {
   assert.ok(r.auditAdjustments >= 2 && r.engineGaps >= 1);
 });
 
+// GAP-5 — the auto-bucketer must not cry wolf: opening-balance differences, net-neutral sibling
+// reclassifications, and immaterial noise are NOT engine gaps. Without this the (c) bucket is
+// untrustworthy at scale (Orafor: 8 flagged, truth was 1). Synthetic figures mirror Orafor's shape.
+test('GAP-5 reconcile: opening-diff + net-neutral reclass + materiality → only genuine gaps stay (c)', () => {
+  const R = (rupees: number) => rupees * 100; // paise
+  const mk = (pl: Record<string, number>, bs: Record<string, number>) => ({
+    pl: { lines: Object.entries(pl).map(([category, valuePaise]) => ({ category, label: category, group: '', statement: 'pl', valuePaise })) },
+    bs: { lines: Object.entries(bs).map(([category, valuePaise]) => ({ category, label: category, group: '', statement: 'bs', valuePaise })) },
+  } as unknown as Parameters<typeof reconcile>[0]);
+
+  const audited: AuditedStatements = {
+    pl: { operating_revenue: R(8000000), cogs: R(5000000), employee_benefits: R(1000000), admin_other_opex: R(2500000), finance_costs: R(500000) },
+    bs: { trade_receivables: R(100000), trade_payables: R(100000) },
+  };
+  // Reconstructed PRE the "LOAN INT" fix: finance understated (the one genuine engine gap),
+  // employee↔admin net-neutral reclass, AR/AP carry a ₹10,00,000 opening difference, cogs off by ₹500.
+  const pre = mk(
+    { operating_revenue: R(8000000), cogs: R(5000500), employee_benefits: R(3000000), admin_other_opex: R(500000), finance_costs: R(1000) },
+    { trade_receivables: R(1300000), trade_payables: R(300000) },
+  );
+  const opts = {
+    tolerancePaise: 100, materialityPaise: R(5000), reclassTolerancePaise: R(50000),
+    openingDifferencePaise: R(1000000), openingDifferenceCategories: ['trade_receivables', 'trade_payables'],
+    reclassGroups: [['employee_benefits', 'admin_other_opex']],
+  };
+  const r = reconcile(pre, audited, opts);
+  const st = (c: string) => r.lines.find((l) => l.category === c)!.status;
+  assert.equal(st('trade_receivables'), 'audit_adjustment'); // opening diff (i)
+  assert.equal(st('trade_payables'), 'audit_adjustment');    // opening diff (i)
+  assert.equal(st('employee_benefits'), 'audit_adjustment'); // net-neutral reclass (ii)
+  assert.equal(st('admin_other_opex'), 'audit_adjustment');  // net-neutral reclass (ii)
+  assert.equal(st('cogs'), 'immaterial');                    // materiality (iii)
+  assert.equal(st('finance_costs'), 'engine_gap');           // the one GENUINE gap
+  assert.equal(r.engineGaps, 1);
+
+  // The OLD heuristic (no options) false-flags all of them as engine gaps.
+  assert.ok(reconcile(pre, audited).engineGaps >= 5);
+
+  // POST the fix (finance now matches) → zero genuine engine gaps.
+  const post = mk(
+    { operating_revenue: R(8000000), cogs: R(5000500), employee_benefits: R(3000000), admin_other_opex: R(500000), finance_costs: R(500000) },
+    { trade_receivables: R(1300000), trade_payables: R(300000) },
+  );
+  assert.equal(reconcile(post, audited, opts).engineGaps, 0);
+});
+
 test('parse DISPLAY format: group-header context + ledger rows', () => {
   const DISPLAY_XML = `<ENVELOPE>
 <DSPACCNAME><DSPDISPNAME>Sales Accounts</DSPDISPNAME></DSPACCNAME><DSPACCINFO/>
