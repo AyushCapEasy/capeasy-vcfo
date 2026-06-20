@@ -3,9 +3,9 @@
 // statement reconstruction + internal checks, and the engine-gap vs audit-adjustment reconcile.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseTallyTB, tallyAmountToPaise } from './parse';
+import { parseTallyTB, tallyAmountToPaise, decodeTallyXml, parseTallyDayBook } from './parse';
 import { classifyLedgers } from './classify';
-import { reconstructFromTallyXml, reconcile, type AuditedStatements } from './index';
+import { reconstructFromTallyXml, reconstructFromTallyExports, reconcile, type AuditedStatements } from './index';
 
 // A small BALANCED Tally TB in DATA format (CLOSINGBALANCE: Dr +, Cr −). One deliberate name↔group
 // conflict: "Investments in MF" sits under Capital Account (equity) but its NAME screams asset.
@@ -150,4 +150,53 @@ test('parse DISPLAY format: group-header context + ledger rows', () => {
   assert.equal(p.ledgers.find((l) => l.name === 'ICICI Bank')!.parentGroup, 'Bank Accounts');
   const d = classifyLedgers(p.ledgers);
   assert.equal(d.find((x) => x.name === 'ICICI Bank')!.category, 'cash_bank');
+});
+
+// GAP-3 — the real-world UTF-16 "All Masters" + "Day Book" two-file export. Synthetic (committable):
+// masters carry the closing balance in <OPENINGBALANCE> (debit-negative); the Day Book carries the P&L
+// postings; closing = field where present, else Σ postings; a cancelled voucher must be skipped.
+test('GAP-3 two-file masters+daybook (UTF-16): field-as-closing + day-book postings reconstruct + balance', () => {
+  const MASTERS = `<ENVELOPE><BODY>
+<LEDGER NAME="Opening Cash"><PARENT>Cash-in-Hand</PARENT><OPENINGBALANCE>-50000.00</OPENINGBALANCE></LEDGER>
+<LEDGER NAME="Capital A/c"><PARENT>Capital Account</PARENT><OPENINGBALANCE>50000.00</OPENINGBALANCE></LEDGER>
+<LEDGER NAME="Sales &amp; Services"><PARENT>Sales Accounts</PARENT></LEDGER>
+<LEDGER NAME="HDFC Bank"><PARENT>Bank Accounts</PARENT></LEDGER>
+<LEDGER NAME="Purchases"><PARENT>Purchase Accounts</PARENT></LEDGER>
+</BODY></ENVELOPE>`;
+  const DAYBOOK = `<ENVELOPE><BODY>
+<VOUCHER><VOUCHERTYPENAME>Sales</VOUCHERTYPENAME>
+  <ALLLEDGERENTRIES.LIST><LEDGERNAME>HDFC Bank</LEDGERNAME><AMOUNT>-8000.00</AMOUNT></ALLLEDGERENTRIES.LIST>
+  <ALLLEDGERENTRIES.LIST><LEDGERNAME>Sales &amp; Services</LEDGERNAME><AMOUNT>8000.00</AMOUNT><BILLALLOCATIONS.LIST><AMOUNT>8000.00</AMOUNT></BILLALLOCATIONS.LIST></ALLLEDGERENTRIES.LIST>
+</VOUCHER>
+<VOUCHER><VOUCHERTYPENAME>Purchase</VOUCHERTYPENAME>
+  <LEDGERENTRIES.LIST><LEDGERNAME>Purchases</LEDGERNAME><AMOUNT>-3000.00</AMOUNT></LEDGERENTRIES.LIST>
+  <LEDGERENTRIES.LIST><LEDGERNAME>HDFC Bank</LEDGERNAME><AMOUNT>3000.00</AMOUNT></LEDGERENTRIES.LIST>
+</VOUCHER>
+<VOUCHER><ISCANCELLED>Yes</ISCANCELLED><VOUCHERTYPENAME>Sales</VOUCHERTYPENAME>
+  <ALLLEDGERENTRIES.LIST><LEDGERNAME>Sales &amp; Services</LEDGERNAME><AMOUNT>99999.00</AMOUNT></ALLLEDGERENTRIES.LIST>
+</VOUCHER>
+</BODY></ENVELOPE>`;
+
+  // UTF-16 LE round-trip through the production decoder.
+  const enc = (s: string) => decodeTallyXml(Buffer.from('﻿' + s, 'utf16le'));
+  assert.equal(enc(MASTERS), MASTERS); // BOM-aware decode restores the original
+  const masters = enc(MASTERS), daybook = enc(DAYBOOK);
+
+  // cancelled voucher is skipped (2 live of 3).
+  assert.equal(parseTallyDayBook(daybook).voucherCount, 2);
+
+  const { parse, statements: s } = reconstructFromTallyExports(masters, daybook);
+  assert.equal(parse.format, 'masters_daybook');
+  const pl = (c: string) => s.pl.lines.find((l) => l.category === c)?.valuePaise ?? 0;
+  const bs = (c: string) => s.bs.lines.find((l) => l.category === c)?.valuePaise ?? 0;
+  // P&L from postings (no master field on these): revenue 8,000 · COGS 3,000 · net 5,000.
+  assert.equal(pl('operating_revenue'), 800000);
+  assert.equal(pl('cogs'), 300000);
+  assert.equal(s.pl.netProfitPaise, 500000); // cancelled 99,999 NOT counted
+  // BS: cash_bank = opening cash 50,000 (field) + HDFC 5,000 (postings) = 55,000; capital 50,000 (field).
+  assert.equal(bs('cash_bank'), 5500000);
+  assert.equal(bs('share_capital'), 5000000);
+  // internal identities hold.
+  assert.equal(s.checks.tbBalanced, true);
+  assert.equal(s.checks.plTiesToBs, true);
 });

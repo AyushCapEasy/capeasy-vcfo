@@ -1,7 +1,7 @@
 // src/lib/tally/index.ts — Route C (Tally TB → MIS) public surface. PURE. parse → classify → build
 // statements; plus reconcile() against a client's audited statements that DISTINGUISHES engine gaps
 // (we computed something wrong) from audit-adjustment gaps (year-end auditor entries not in the books).
-import { parseTallyTB, type TallyParse } from './parse';
+import { parseTallyTB, parseTallyMasters, parseTallyDayBook, type TallyParse, type TallyLedger } from './parse';
 import { classifyLedgers, type LedgerDecision } from './classify';
 import { buildStatements, type Statements } from './statements';
 import { CATEGORY_BY_CODE } from '../decision';
@@ -17,6 +17,43 @@ export type TallyReconstruction = { parse: TallyParse; decisions: LedgerDecision
 export function reconstructFromTallyXml(xml: string): TallyReconstruction {
   const parse = parseTallyTB(xml);
   const decisions = classifyLedgers(parse.ledgers);
+  return { parse, decisions, statements: buildStatements(decisions) };
+}
+
+/**
+ * GAP-3 — full Route-C reconstruction from the real-world two-file export: an "All Masters" XML (chart +
+ * group + closing-balance field) and an optional "Day Book" XML (vouchers). Closing balance = master
+ * field where present, else Σ day-book postings (no ledger has both). Pass strings already decoded via
+ * `decodeTallyXml` (BOM-aware). Works for any Tally export — tested against Orafor, hardcodes nothing.
+ */
+export function reconstructFromTallyExports(mastersXml: string, dayBookXml = ''): TallyReconstruction {
+  const m = parseTallyMasters(mastersXml);
+  const db = dayBookXml
+    ? parseTallyDayBook(dayBookXml)
+    : { postingsDrPaise: new Map<string, number>(), voucherCount: 0, postingCount: 0, postingSumPaise: 0 };
+
+  const merged = new Map<string, { parentGroup: string; closing: number }>();
+  for (const l of m.ledgers) merged.set(l.name, { parentGroup: l.parentGroup, closing: l.closingDrPaise });
+  let postedOnly = 0;
+  for (const [name, posted] of db.postingsDrPaise) {
+    const ex = merged.get(name);
+    if (!ex) { merged.set(name, { parentGroup: '', closing: posted }); postedOnly++; }
+    else if (ex.closing === 0) ex.closing = posted; // master field (if non-zero) is the closing; else day-book flow
+  }
+  const ledgers: TallyLedger[] = [...merged].map(([name, x]) => ({
+    name,
+    parentGroup: x.parentGroup,
+    closingDrPaise: x.closing > 0 ? x.closing : 0,
+    closingCrPaise: x.closing < 0 ? -x.closing : 0,
+  }));
+
+  const warnings: string[] = [];
+  if (!dayBookXml) warnings.push('No Day Book provided — P&L ledgers without a master balance will be empty.');
+  if (postedOnly) warnings.push(`${postedOnly} ledger(s) posted in the Day Book are absent from Masters — classified by name only.`);
+  if (Math.abs(db.postingsDrPaise.size ? db.postingSumPaise : 0) > 100) warnings.push(`Day-book postings do not net to zero (Σ ${db.postingSumPaise} paise) — vouchers may be unbalanced.`);
+
+  const parse: TallyParse = { format: 'masters_daybook', ledgers, withGroup: m.withGroup, warnings };
+  const decisions = classifyLedgers(ledgers);
   return { parse, decisions, statements: buildStatements(decisions) };
 }
 
