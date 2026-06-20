@@ -11,12 +11,17 @@ export default async function LoginPage() {
   if (user) redirect('/');
 
   return (
-    <main className="flex flex-1 items-center justify-center p-8">
+    <main className="flex flex-1 items-center justify-center p-6">
       <div className="w-full max-w-sm">
-        <p className="text-sm font-medium tracking-widest text-neutral-500 uppercase">CapEasy</p>
-        <h1 className="mt-1 mb-6 text-2xl font-semibold">vCFO · Sign in</h1>
-        <LoginForm />
-        <p className="mt-6 text-xs text-neutral-500">
+        <div className="mb-6 text-center">
+          <p className="eyebrow tracking-[0.2em]">CapEasy</p>
+          <h1 className="mt-1.5 text-2xl font-bold text-slate-900">vCFO</h1>
+          <p className="mt-1 text-sm text-slate-500">Sign in to the MIS workspace</p>
+        </div>
+        <div className="card p-6 shadow-md">
+          <LoginForm />
+        </div>
+        <p className="mt-5 text-center text-xs text-slate-400">
           Internal access only. Accounts are provisioned by an administrator.
         </p>
       </div>

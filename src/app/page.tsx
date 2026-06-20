@@ -31,55 +31,58 @@ export default async function Home() {
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <header className="flex items-center justify-between border-b border-neutral-200 px-6 py-3 dark:border-neutral-800">
-        <div className="flex items-baseline gap-2">
-          <span className="text-sm font-semibold">CapEasy vCFO</span>
-          <span className="text-xs text-neutral-500">MIS Engine</span>
-        </div>
-        <div className="flex items-center gap-3 text-sm">
-          <span className="text-neutral-600 dark:text-neutral-400">
-            {profile?.full_name ?? profile?.email ?? user.email}
-          </span>
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="rounded-md border border-neutral-300 px-3 py-1 text-xs hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-900"
-            >
-              Sign out
-            </button>
-          </form>
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3.5">
+          <div className="flex items-baseline gap-2">
+            <span className="text-sm font-semibold text-slate-900">CapEasy vCFO</span>
+            <span className="text-xs text-slate-400">MIS Engine</span>
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <span className="text-slate-500">
+              {profile?.full_name ?? profile?.email ?? user.email}
+            </span>
+            <form action={signOut}>
+              <button type="submit" className="btn btn-secondary px-3 py-1.5 text-xs">
+                Sign out
+              </button>
+            </form>
+          </div>
         </div>
       </header>
 
-      <main className="flex-1 p-6">
-        <h1 className="text-lg font-semibold">Client workspaces</h1>
-        <p className="mt-1 text-sm text-neutral-500">
+      <main className="mx-auto w-full max-w-5xl flex-1 p-6">
+        <h1 className="text-xl font-bold text-slate-900">Client workspaces</h1>
+        <p className="mt-1 text-sm text-slate-500">
           {orgs?.length
             ? `You have access to ${orgs.length} client ${orgs.length === 1 ? 'org' : 'orgs'} (RLS-scoped).`
             : 'No client orgs are visible to your account yet.'}
         </p>
 
-        <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {(orgs ?? []).map((o) => (
-            <li key={o.id}>
-              <Link
-                href={`/clients/${o.id}`}
-                className="block rounded-lg border border-neutral-200 p-4 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">{o.legal_name}</span>
-                  <span className="rounded bg-neutral-100 px-2 py-0.5 text-[10px] font-medium tracking-wide text-neutral-600 uppercase dark:bg-neutral-800 dark:text-neutral-300">
-                    {roleByOrg.get(o.id) ?? '—'}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-neutral-500">
-                  {o.entity_type}
-                  {o.state ? ` · ${o.state}` : ''}
-                </p>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        {orgs?.length ? (
+          <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {orgs.map((o) => (
+              <li key={o.id}>
+                <Link
+                  href={`/clients/${o.id}`}
+                  className="card block p-4 transition-all hover:border-slate-300 hover:shadow-md"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-slate-900">{o.legal_name}</span>
+                    <span className="badge badge-neutral">{roleByOrg.get(o.id) ?? '—'}</span>
+                  </div>
+                  <p className="mt-1.5 text-xs text-slate-500">
+                    {o.entity_type}
+                    {o.state ? ` · ${o.state}` : ''}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="card mt-5 p-10 text-center text-sm text-slate-500">
+            No client orgs are visible to your account yet. An administrator provisions access per client.
+          </div>
+        )}
       </main>
     </div>
   );

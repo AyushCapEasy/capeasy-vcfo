@@ -34,13 +34,13 @@ function DeltaChip({ pct }: { pct: number | null }) {
 
 function Section({ title, subtitle, children, right }: { title: string; subtitle?: string; children: React.ReactNode; right?: React.ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-        <div>
-          <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
-          {subtitle ? <p className="text-xs text-slate-400">{subtitle}</p> : null}
+    <section className="card overflow-hidden">
+      <div className="panel-head">
+        <div className="min-w-0">
+          <h2 className="panel-title">{title}</h2>
+          {subtitle ? <p className="panel-sub">{subtitle}</p> : null}
         </div>
-        {right}
+        {right ? <div className="shrink-0">{right}</div> : null}
       </div>
       {children}
     </section>
@@ -53,27 +53,27 @@ function StatementBlock({ rows, drilldown }: { rows: StmtRow[]; drilldown: Recor
       {rows.map((row) => {
         const accounts = (row.codes ?? []).flatMap((c) => drilldown[c] ?? []);
         const amountCls =
-          row.kind === 'total' ? 'text-primary font-semibold' : row.kind === 'subtotal' ? 'font-semibold text-slate-900' : (row.paise ?? 0) < 0 ? 'text-slate-500' : 'text-slate-800';
-        const rowCls = row.kind === 'total' ? 'bg-primary/5' : row.kind === 'subtotal' ? 'bg-slate-50/70' : '';
+          row.kind === 'total' ? 'text-primary font-bold' : row.kind === 'subtotal' ? 'font-semibold text-slate-900' : (row.paise ?? 0) < 0 ? 'text-slate-500' : 'text-slate-800';
+        const rowCls = row.kind === 'total' ? 'bg-primary-50 border-t border-slate-200' : row.kind === 'subtotal' ? 'bg-slate-50' : '';
         if (accounts.length) {
           return (
             <details key={row.label} className="group">
-              <summary className={`grid cursor-pointer list-none grid-cols-[1fr_auto] items-center gap-4 px-4 py-2 text-sm hover:bg-slate-50 ${rowCls}`}>
+              <summary className={`grid cursor-pointer list-none grid-cols-[1fr_auto] items-center gap-4 px-5 py-2.5 text-sm hover:bg-slate-50/70 ${rowCls}`}>
                 <span className="flex items-center gap-1.5 text-slate-700">
                   <svg className="h-3 w-3 text-slate-400 transition-transform group-open:rotate-90" viewBox="0 0 12 12">
                     <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" />
                   </svg>
                   {row.label}
                 </span>
-                <span className={`tnum ${amountCls}`}>{inr(row.paise)}</span>
+                <span className={`num ${amountCls}`}>{inr(row.paise)}</span>
               </summary>
-              <div className="bg-slate-50/60 px-4 pb-2 pl-9">
+              <div className="border-t border-slate-100 bg-slate-50/60 px-5 pt-1.5 pb-2.5 pl-9">
                 <table className="w-full text-xs text-slate-500">
                   <tbody>
                     {accounts.map((a) => (
                       <tr key={a.code}>
                         <td className="py-0.5">{a.code} · {a.name}</td>
-                        <td className="tnum py-0.5 pl-4 text-right whitespace-nowrap">{a.debitPaise ? `${inr(a.debitPaise)} Dr` : `${inr(a.creditPaise)} Cr`}</td>
+                        <td className="num py-0.5 pl-4 text-slate-600">{a.debitPaise ? `${inr(a.debitPaise)} Dr` : `${inr(a.creditPaise)} Cr`}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -83,12 +83,12 @@ function StatementBlock({ rows, drilldown }: { rows: StmtRow[]; drilldown: Recor
           );
         }
         return (
-          <div key={row.label} className={`grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-2 text-sm ${rowCls}`}>
+          <div key={row.label} className={`grid grid-cols-[1fr_auto] items-center gap-4 px-5 py-2.5 text-sm ${rowCls}`}>
             <span className={row.kind ? 'font-medium text-slate-900' : 'text-slate-700'}>
               {row.label}
               {row.note ? <span className="ml-1 text-xs font-normal text-slate-400">· {row.note}</span> : null}
             </span>
-            <span className={`tnum ${amountCls}`}>{inr(row.paise)}</span>
+            <span className={`num ${amountCls}`}>{inr(row.paise)}</span>
           </div>
         );
       })}
@@ -99,7 +99,7 @@ function StatementBlock({ rows, drilldown }: { rows: StmtRow[]; drilldown: Recor
 // Tier 1 observations (M7) into the selected period, with reuse of the existing by-code drill-down.
 function ObservationsBlock({ observations, drilldown }: { observations: Observation[]; drilldown: Record<string, DrilldownLine[]> }) {
   if (!observations.length) {
-    return <p className="px-4 py-6 text-sm text-slate-400">No period-over-period move cleared the notability thresholds for this period (or it is the first period). Nothing is fabricated — honest silence.</p>;
+    return <p className="px-5 py-8 text-sm text-slate-400">No period-over-period move cleared the notability thresholds for this period (or it is the first period). Nothing is fabricated — honest silence.</p>;
   }
   return (
     <div className="divide-y divide-slate-100">
@@ -109,12 +109,12 @@ function ObservationsBlock({ observations, drilldown }: { observations: Observat
         const enginePaths = [...new Set(o.traces.map((t) => t.enginePath))];
         return (
           <details key={o.id} className="group">
-            <summary className="flex cursor-pointer list-none items-start gap-2 px-4 py-2.5 text-sm hover:bg-slate-50">
-              <svg className="mt-0.5 h-3 w-3 shrink-0 text-slate-400 transition-transform group-open:rotate-90" viewBox="0 0 12 12"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
-              <span className="flex-1 text-slate-700">{o.statement}</span>
-              <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-slate-500 uppercase">{o.status}</span>
+            <summary className="flex cursor-pointer list-none items-start gap-2.5 px-5 py-3 text-sm hover:bg-slate-50">
+              <svg className="mt-1 h-3 w-3 shrink-0 text-slate-400 transition-transform group-open:rotate-90" viewBox="0 0 12 12"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
+              <span className="flex-1 leading-relaxed text-slate-700">{o.statement}</span>
+              <span className="badge badge-neutral mt-0.5 shrink-0">{o.status}</span>
             </summary>
-            <div className="space-y-1 bg-slate-50/60 px-4 pb-3 pl-9 text-xs text-slate-500">
+            <div className="space-y-1 bg-slate-50/60 px-5 pb-3 pl-10 text-xs text-slate-500">
               <p>
                 Traces to engine field{enginePaths.length > 1 ? 's' : ''}:{' '}
                 {enginePaths.map((p) => <code key={p} className="mr-1 rounded bg-white px-1 py-0.5 text-[11px] text-slate-600">{p}</code>)}
@@ -137,7 +137,7 @@ function ObservationsBlock({ observations, drilldown }: { observations: Observat
 
 // Tier 2 — diagnoses (rule-based "why"; each move decomposed into engine-field drivers).
 function DiagnosesBlock({ diagnoses }: { diagnoses: Diagnosis[] }) {
-  if (!diagnoses.length) return <p className="px-4 py-6 text-sm text-slate-400">No observations this period, so nothing to diagnose.</p>;
+  if (!diagnoses.length) return <p className="px-5 py-8 text-sm text-slate-400">No observations this period, so nothing to diagnose.</p>;
   const fmt = (dr: Diagnosis['drivers'][number]) =>
     dr.contributionPp !== undefined ? `${dr.contributionPp >= 0 ? '+' : '−'}${Math.abs(dr.contributionPp).toFixed(2)}pp`
       : dr.contributionPaise !== undefined ? inr(dr.contributionPaise)
@@ -146,12 +146,12 @@ function DiagnosesBlock({ diagnoses }: { diagnoses: Diagnosis[] }) {
     <div className="divide-y divide-slate-100">
       {diagnoses.map((d) => (
         <details key={d.observationId} className="group">
-          <summary className="flex cursor-pointer list-none items-start gap-2 px-4 py-2.5 text-sm hover:bg-slate-50">
-            <svg className="mt-0.5 h-3 w-3 shrink-0 text-slate-400 transition-transform group-open:rotate-90" viewBox="0 0 12 12"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
-            <span className="flex-1 text-slate-700"><span className="font-medium">{d.metric}</span> — {d.cause}</span>
-            <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-slate-500 uppercase">{d.status}</span>
+          <summary className="flex cursor-pointer list-none items-start gap-2.5 px-5 py-3 text-sm hover:bg-slate-50">
+            <svg className="mt-1 h-3 w-3 shrink-0 text-slate-400 transition-transform group-open:rotate-90" viewBox="0 0 12 12"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
+            <span className="flex-1 leading-relaxed text-slate-700"><span className="font-semibold text-slate-900">{d.metric}</span> — {d.cause}</span>
+            <span className="badge badge-neutral mt-0.5 shrink-0">{d.status}</span>
           </summary>
-          <div className="bg-slate-50/60 px-4 pb-3 pl-9 text-xs text-slate-500">
+          <div className="bg-slate-50/60 px-5 pb-3 pl-10 text-xs text-slate-500">
             <p className="mb-1 text-[11px] text-slate-400">rule {d.ruleId} · {d.decomposition}{d.decomposition === 'single_factor' ? ' (ceteris-paribus, not additive)' : ''}</p>
             {d.drivers.length ? (
               <table className="w-full"><tbody>
@@ -169,17 +169,22 @@ function DiagnosesBlock({ diagnoses }: { diagnoses: Diagnosis[] }) {
 
 // Tier 3 — recommendations (advice with quantified impact from engine figures).
 function RecommendationsBlock({ recs }: { recs: Recommendation[] }) {
-  if (!recs.length) return <p className="px-4 py-6 text-sm text-slate-400">No recommendations — no observed move this period implies an actionable lever (favourable moves don&apos;t generate advice). Nothing fabricated.</p>;
+  if (!recs.length) return <p className="px-5 py-8 text-sm text-slate-400">No recommendations — no observed move this period implies an actionable lever (favourable moves don&apos;t generate advice). Nothing fabricated.</p>;
   return (
     <ul className="divide-y divide-slate-100">
       {recs.map((r, i) => (
-        <li key={i} className="px-4 py-3 text-sm">
-          <div className="flex items-start gap-2">
-            <span className="flex-1 text-slate-700">{r.action}</span>
-            <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-slate-500 uppercase">{r.status}</span>
+        <li key={i} className="px-5 py-3.5 text-sm">
+          <div className="flex items-start gap-2.5">
+            <span className="mt-1.5 h-3.5 w-0.5 shrink-0 rounded-full bg-accent" aria-hidden />
+            <div className="flex-1">
+              <div className="flex items-start gap-2">
+                <span className="flex-1 font-medium text-slate-800">{r.action}</span>
+                <span className="badge badge-neutral mt-0.5 shrink-0">{r.status}</span>
+              </div>
+              <p className="mt-1 text-xs text-slate-500"><span className="font-medium text-slate-600">Impact:</span> {r.quantifiedImpact.basis}</p>
+              <p className="mt-0.5 text-[11px] text-slate-400">rule {r.ruleId} · confidence {r.confidence} · traces {r.quantifiedImpact.traces.join(', ')}</p>
+            </div>
           </div>
-          <p className="mt-1 text-xs text-slate-500">Impact: {r.quantifiedImpact.basis}</p>
-          <p className="mt-0.5 text-[11px] text-slate-400">rule {r.ruleId} · confidence {r.confidence} · traces {r.quantifiedImpact.traces.join(', ')}</p>
         </li>
       ))}
     </ul>
@@ -188,14 +193,17 @@ function RecommendationsBlock({ recs }: { recs: Recommendation[] }) {
 
 // Tier 3 — goal tracking (trajectory vs PLACEHOLDER target, D-013).
 function GoalsBlock({ goals }: { goals: GoalTrack[] }) {
-  const badge = (s: GoalTrack['trackStatus']) => s === 'on_track' ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20' : s === 'off_track' ? 'bg-red-50 text-red-700 ring-red-600/20' : 'bg-slate-100 text-slate-500 ring-slate-400/20';
+  const badge = (s: GoalTrack['trackStatus']) => s === 'on_track' ? 'badge-positive' : s === 'off_track' ? 'badge-negative' : 'badge-neutral';
   return (
     <div className="divide-y divide-slate-100">
-      <p className="bg-amber-50/50 px-4 py-2 text-xs text-amber-700">⚠ Targets are PLACEHOLDER stubs (D-013) — real analyst-entered client goals are a TODO. The tracking logic below is live against the engine.</p>
+      <p className="flex items-start gap-1.5 border-b border-amber-200/60 bg-amber-50/60 px-5 py-2.5 text-xs text-amber-700">
+        <span aria-hidden>⚠</span>
+        <span>Targets are PLACEHOLDER stubs (D-013) — real analyst-entered client goals are a TODO. The tracking logic below is live against the engine.</span>
+      </p>
       {goals.map((g) => (
-        <div key={g.goalId} className="flex items-start gap-2 px-4 py-2.5 text-sm">
-          <span className="flex-1 text-slate-700"><span className="font-medium">{g.metric}</span> <span className="text-slate-400">· {g.detail}</span></span>
-          <span className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase ring-1 ring-inset ${badge(g.trackStatus)}`}>{g.trackStatus.replace('_', ' ')}</span>
+        <div key={g.goalId} className="flex items-start gap-2 px-5 py-3 text-sm">
+          <span className="flex-1 text-slate-700"><span className="font-semibold text-slate-900">{g.metric}</span> <span className="text-slate-400">· {g.detail}</span></span>
+          <span className={`badge shrink-0 ${badge(g.trackStatus)}`}>{g.trackStatus.replace('_', ' ')}</span>
         </div>
       ))}
     </div>
@@ -214,9 +222,11 @@ export default async function MisPage({ params, searchParams }: { params: Promis
 
   if (!chain.periods.length) {
     return (
-      <main className="mx-auto max-w-2xl p-10 text-center">
-        <p className="text-slate-500">No periods yet for {chain.org.legalName}. Add a period and upload a trial balance first.</p>
-        <Link href={`/clients/${orgId}`} className="text-primary mt-3 inline-block text-sm hover:underline">← Back to client</Link>
+      <main className="mx-auto flex min-h-full max-w-2xl items-center justify-center p-6">
+        <div className="card w-full p-10 text-center">
+          <p className="text-sm text-slate-500">No periods yet for <span className="font-medium text-slate-700">{chain.org.legalName}</span>. Add a period and upload a trial balance first.</p>
+          <Link href={`/clients/${orgId}`} className="text-primary mt-4 inline-block text-sm font-medium hover:underline">← Back to client</Link>
+        </div>
       </main>
     );
   }
@@ -254,17 +264,17 @@ export default async function MisPage({ params, searchParams }: { params: Promis
               <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">Management MIS Pack</h1>
               <p className="mt-0.5 text-sm text-slate-500">
                 {chain.org.legalName} · {periodMeta.label}
-                <span className={`ml-2 inline-flex rounded px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase ring-1 ring-inset ${STATUS_STYLE[periodMeta.status] ?? ''}`}>{periodMeta.status}</span>
+                <span className={`badge ml-2 ${STATUS_STYLE[periodMeta.status] ?? ''}`}>{periodMeta.status}</span>
               </p>
             </div>
-            <div className="flex flex-col items-end gap-2">
+            <div className="flex flex-col items-end gap-2.5">
               <div className="flex gap-2">
-                <a href={`/clients/${orgId}/mis/pdf?p=${periodMeta.id}`} className="bg-primary hover:bg-primary/90 rounded-lg px-3 py-2 text-sm font-medium text-white">Export PDF</a>
-                <a href={`/clients/${orgId}/mis/workbook?p=${periodMeta.id}`} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Download workbook</a>
+                <a href={`/clients/${orgId}/mis/pdf?p=${periodMeta.id}`} className="btn btn-primary">Export PDF</a>
+                <a href={`/clients/${orgId}/mis/workbook?p=${periodMeta.id}`} className="btn btn-secondary">Download workbook</a>
               </div>
-              <nav className="flex gap-1">
+              <nav className="flex gap-1 rounded-[var(--radius-ctl)] bg-slate-100/70 p-0.5">
                 {chain.periods.map((pp) => (
-                  <Link key={pp.id} href={`/clients/${orgId}/mis?p=${pp.id}`} className={`rounded-md px-2.5 py-1 text-xs font-medium ${pp.id === periodMeta.id ? 'bg-primary text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
+                  <Link key={pp.id} href={`/clients/${orgId}/mis?p=${pp.id}`} className={`pill ${pp.id === periodMeta.id ? 'pill-active shadow-sm' : 'pill-idle'}`}>
                     {pp.label}
                   </Link>
                 ))}
@@ -278,10 +288,10 @@ export default async function MisPage({ params, searchParams }: { params: Promis
         {/* KPI strip */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {kpiCards.map((k) => (
-            <div key={k.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-xs font-medium tracking-wide text-slate-400 uppercase">{k.label}</p>
-              <p className="tnum mt-1 text-xl font-bold text-slate-900">{inr(k.paise)}</p>
-              <div className="mt-1"><DeltaChip pct={k.deltaPct} /></div>
+            <div key={k.label} className="card p-4">
+              <p className="eyebrow">{k.label}</p>
+              <p className="tnum mt-1.5 text-2xl font-bold text-slate-900">{inr(k.paise)}</p>
+              <div className="mt-1.5"><DeltaChip pct={k.deltaPct} /></div>
             </div>
           ))}
         </div>
@@ -303,7 +313,7 @@ export default async function MisPage({ params, searchParams }: { params: Promis
           {cf ? (
             <StatementBlock rows={cf} drilldown={drilldown} />
           ) : (
-            <p className="px-4 py-6 text-sm text-slate-400">n/a — needs a prior period (first period in the chain).</p>
+            <p className="px-5 py-8 text-sm text-slate-400">n/a — needs a prior period (first period in the chain).</p>
           )}
         </Section>
 
@@ -335,9 +345,9 @@ export default async function MisPage({ params, searchParams }: { params: Promis
         <Section title="Key ratios &amp; working capital" subtitle="§4.2–4.3">
           <div className="grid grid-cols-2 gap-px bg-slate-100 sm:grid-cols-3 lg:grid-cols-4">
             {ratioCards(result).map((c) => (
-              <div key={c.label} className="bg-white px-4 py-3">
-                <p className="text-xs text-slate-400">{c.label}</p>
-                <p className="tnum mt-0.5 text-base font-semibold text-slate-900">{c.value}</p>
+              <div key={c.label} className="bg-white px-4 py-3.5">
+                <p className="text-[11px] font-medium tracking-wide text-slate-400 uppercase">{c.label}</p>
+                <p className="tnum mt-1 text-lg font-semibold text-slate-900">{c.value}</p>
               </div>
             ))}
           </div>
@@ -345,15 +355,15 @@ export default async function MisPage({ params, searchParams }: { params: Promis
 
         {/* MoM trend */}
         <Section title="Month-on-month trend" subtitle="Across the seeded period chain">
-          <div className="grid gap-6 p-4 sm:grid-cols-3">
+          <div className="grid gap-6 p-5 sm:grid-cols-3">
             {trends.map((t) => (
               <div key={t.label}>
-                <p className="text-xs font-medium text-slate-500">{t.label}</p>
-                <div className="mt-2"><Sparkline values={t.points.map((pt) => pt.paise)} /></div>
+                <p className="eyebrow">{t.label}</p>
+                <div className="mt-2.5"><Sparkline values={t.points.map((pt) => pt.paise)} /></div>
                 <div className="mt-2 flex justify-between text-[11px] text-slate-400">
                   {t.points.map((pt) => (<span key={pt.label}>{pt.label.split(' ')[0]}</span>))}
                 </div>
-                <p className="tnum mt-1 text-sm font-semibold text-slate-900">{inr(t.points[t.points.length - 1].paise)}</p>
+                <p className="tnum mt-1.5 text-base font-semibold text-slate-900">{inr(t.points[t.points.length - 1].paise)}</p>
               </div>
             ))}
           </div>
@@ -361,7 +371,7 @@ export default async function MisPage({ params, searchParams }: { params: Promis
 
         {/* Commentary */}
         <Section title="Analyst commentary" subtitle="Editable · saved to this period">
-          <div className="p-4">
+          <div className="p-5">
             <Commentary orgId={orgId} periodId={periodMeta.id} value={periodMeta.commentary} />
           </div>
         </Section>
