@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Gitignored non-source dirs (D-007/D-014): real client-data + vendored design
+    // prototype + generated exports. Never part of the lint gate — eslint doesn't
+    // read .gitignore, so they must be ignored explicitly.
+    ".client-data.local/**",
+    "outputs/**",
   ]),
 ]);
 

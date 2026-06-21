@@ -34,8 +34,8 @@ function StepHead({ n, title, note }: { n: number; title: string; note?: React.R
   return (
     <div className="mb-3 flex items-center gap-2.5">
       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">{n}</span>
-      <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
-      {note ? <span className="text-xs font-normal text-slate-400">{note}</span> : null}
+      <h2 className="text-sm font-semibold text-ink">{title}</h2>
+      {note ? <span className="text-xs font-normal text-muted">{note}</span> : null}
     </div>
   );
 }
@@ -62,16 +62,16 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
   const mappedCount = accounts.filter((a) => a.mappedCategoryCode).length;
 
   return (
-    <div className="flex min-h-full flex-1 flex-col bg-slate-50">
-      <header className="border-b border-slate-200 bg-white px-6 py-3.5">
+    <div className="flex min-h-full flex-1 flex-col bg-canvas">
+      <header className="border-b border-line bg-white px-6 py-3.5">
         <div className="mx-auto flex max-w-5xl items-center gap-2 text-sm">
-          <Link href="/" className="text-slate-400 hover:text-slate-600 hover:underline">CapEasy vCFO</Link>
-          <span className="text-slate-300">/</span>
-          <Link href={`/clients/${orgId}`} className="text-slate-400 hover:text-slate-600 hover:underline">{org?.legal_name ?? 'Client'}</Link>
-          <span className="text-slate-300">/</span>
-          <span className="font-semibold text-slate-900">{period.label ?? monthLabel(period.month)}</span>
+          <Link href="/" className="text-muted hover:text-body hover:underline">CapEasy vCFO</Link>
+          <span className="text-faint">/</span>
+          <Link href={`/clients/${orgId}`} className="text-muted hover:text-body hover:underline">{org?.legal_name ?? 'Client'}</Link>
+          <span className="text-faint">/</span>
+          <span className="font-semibold text-ink">{period.label ?? monthLabel(period.month)}</span>
           <span className="badge badge-neutral ml-1.5">{period.status}</span>
-          <span className="ml-auto text-xs text-slate-400">{taxYearLabel(period.month)}</span>
+          <span className="ml-auto text-xs text-muted">{taxYearLabel(period.month)}</span>
         </div>
       </header>
 
@@ -84,8 +84,8 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
         <section>
           <StepHead n={1} title="Upload trial balance" />
           <div className="card p-5">
-            <p className="mb-3 text-xs text-slate-500">
-              Expected columns: <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px] text-slate-600">account_code, account_name, debit, credit</code> (CSV or XLSX). Header synonyms tolerated; amounts in ₹.
+            <p className="mb-3 text-xs text-muted">
+              Expected columns: <code className="rounded bg-hair px-1 py-0.5 text-[11px] text-body">account_code, account_name, debit, credit</code> (CSV or XLSX). Header synonyms tolerated; amounts in ₹.
             </p>
             <UploadForm orgId={orgId} periodId={periodId} />
           </div>
@@ -100,14 +100,14 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
                 <p className={`px-5 py-3 text-sm font-semibold ${report?.ok ? 'bg-emerald-50/60 text-emerald-800' : 'bg-red-50/60 text-red-800'}`}>
                   {report?.ok ? '✓ Gate passed — ready to finalise.' : '✗ Gate blocked — resolve the failures below before compute.'}
                 </p>
-                <ul className="divide-y divide-slate-100">
+                <ul className="divide-y divide-line">
                   {report?.rules.map((r) => (
                     <li key={r.id} className="px-5 py-3 text-sm">
                       <div className="flex items-center gap-2">
                         <RuleBadge status={r.status} />
-                        <span className="font-medium text-slate-900">{r.label}</span>
+                        <span className="font-medium text-ink">{r.label}</span>
                       </div>
-                      <p className="mt-1 text-slate-500">{r.summary}</p>
+                      <p className="mt-1 text-muted">{r.summary}</p>
                       {r.offenders?.length ? (
                         <ul className="mt-1.5 ml-1 list-disc pl-4 text-xs text-red-600 marker:text-red-300">
                           {r.offenders.map((o, i) => (
@@ -126,24 +126,24 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
               <StepHead n={3} title="Map accounts" note={`${mappedCount}/${accounts.length} mapped — saved mappings auto-apply next period`} />
               <div className="card overflow-hidden">
                 <table className="w-full text-sm">
-                  <thead className="border-b border-slate-200 bg-slate-50 text-left">
-                    <tr className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+                  <thead className="border-b border-line bg-canvas text-left">
+                    <tr className="text-[11px] font-semibold tracking-wide text-muted uppercase">
                       <th className="px-4 py-2.5">Source account</th>
                       <th className="px-4 py-2.5 text-right">Debit</th>
                       <th className="px-4 py-2.5 text-right">Credit</th>
                       <th className="px-4 py-2.5">Canonical category</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-line">
                     {accounts.map((a) => {
                       const defaultId = a.mappedCategoryCode ? codeToId.get(a.mappedCategoryCode) : a.suggestions[0] ? codeToId.get(a.suggestions[0].code) : '';
                       const state = a.mappedCategoryCode ? 'mapped' : a.suggestions[0] ? 'suggested' : 'unmapped';
                       return (
                         <tr key={a.code} className={state === 'mapped' ? '' : 'bg-amber-50/50'}>
                           <td className="px-4 py-2.5">
-                            <div className="font-medium text-slate-900">{a.name}</div>
+                            <div className="font-medium text-ink">{a.name}</div>
                             <div className="mt-0.5 text-xs">
-                              <span className="text-slate-400">{a.code}</span>
+                              <span className="text-muted">{a.code}</span>
                               {state === 'mapped' ? (
                                 <span className="ml-1.5 font-medium text-emerald-600">✓ mapped → {codeToName.get(a.mappedCategoryCode!)}</span>
                               ) : state === 'suggested' ? (
@@ -153,13 +153,13 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
                               )}
                             </div>
                           </td>
-                          <td className="num px-4 py-2.5 text-slate-700">{a.debitPaise ? paiseToInr(a.debitPaise) : ''}</td>
-                          <td className="num px-4 py-2.5 text-slate-700">{a.creditPaise ? paiseToInr(a.creditPaise) : ''}</td>
+                          <td className="num px-4 py-2.5 text-body">{a.debitPaise ? paiseToInr(a.debitPaise) : ''}</td>
+                          <td className="num px-4 py-2.5 text-body">{a.creditPaise ? paiseToInr(a.creditPaise) : ''}</td>
                           <td className="px-4 py-2.5">
                             <form action={saveMapping.bind(null, orgId, periodId)} className="flex items-center gap-2">
                               <input type="hidden" name="code" value={a.code} />
                               <input type="hidden" name="name" value={a.name} />
-                              <select name="categoryId" defaultValue={defaultId ?? ''} className="min-w-0 flex-1 rounded-[var(--radius-ctl)] border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25">
+                              <select name="categoryId" defaultValue={defaultId ?? ''} className="min-w-0 flex-1 rounded-[var(--radius-ctl)] border border-line-strong bg-white px-2 py-1.5 text-xs text-ink shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25">
                                 <option value="">— unmapped —</option>
                                 {groups.map((g) => (
                                   <optgroup key={g} label={GROUP_LABEL[g] ?? g}>
@@ -169,7 +169,7 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
                                   </optgroup>
                                 ))}
                               </select>
-                              <button type="submit" className="shrink-0 rounded-[var(--radius-ctl)] border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50">Save</button>
+                              <button type="submit" className="shrink-0 rounded-[var(--radius-ctl)] border border-line-strong px-2.5 py-1.5 text-xs font-medium text-body shadow-sm hover:bg-canvas">Save</button>
                             </form>
                           </td>
                         </tr>
@@ -196,13 +196,13 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
                     </form>
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-500">The validation gate must pass before this period can be marked reviewed or locked.</p>
+                  <p className="text-sm text-muted">The validation gate must pass before this period can be marked reviewed or locked.</p>
                 )}
               </div>
             </section>
           </>
         ) : (
-          <div className="card p-6 text-center text-sm text-slate-500">Upload a trial balance to begin mapping and validation.</div>
+          <div className="card p-6 text-center text-sm text-muted">Upload a trial balance to begin mapping and validation.</div>
         )}
         </>
         )}

@@ -52,6 +52,10 @@ Standing rules (unchanged): foreground; announce each sub-step as you begin it; 
   - Capitalisation judgment call (trademark/startup expensed by group) → `RULE-REVIEW.md §A6`. Director-remuneration line placement → `§A7`. Director-loan current-vs-non-current → `§A8`. (All presentation judgment calls, not bugs.)
 - [ ] **M12+ — (later, separate)** self-serve front-end + transparency UI; Zoho/Tally pull; THEN bank ingestion + Stage 0 reconciliation; real goal-capture. Not in this phase. Client-facing surface requires a deliberate separate production project + RLS security review before ANY real data (Vision §1, D-007).
 
+- [ ] **REDESIGN — deferred DATA features (logged 2026-06-21 during the `m-redesign` warm-neutral restyle; NOT built — decide after the redesign).** These are data/UI features the Claude Design mockup shows but the engine doesn't yet surface; they were intentionally NOT faked during the restyle (no number without backing data).
+  - **Comparative period columns on the statements (current / prior / change).** The mockup shows P&L/BS/Cash-flow as `label · current · prior · QoQ` columns; today each statement renders a single period (with drill-down). Needs: per-line prior-period values + a variance column from the present layer (`src/lib/mis/present.ts` → `pnlRows`/`bsAssetRows`/`cfRows` would return `{ label, curPaise, priorPaise, deltaPct }`), and the `StatementBlock` UI to render three columns. Period comparison currently lives in the KPI delta chips + MoM trend, so this is an enhancement, not a gap. Optional: the mockup's tabbed P&L "Comparative / Analytical (% of revenue + bars)" view.
+  - **Dashboard-style Overview (KPI cards + revenue chart + runway + "From your CFO" notes).** The mockup's Overview is a financial dashboard; the real Overview is the client's periods workspace (restyled warm in the redesign). A dashboard Overview needs client-level aggregation across the period chain (latest-period KPIs, multi-quarter revenue series, runway) — a new data layer, not a restyle. Until built, Overview stays the (real) periods workspace.
+
 ---
 
 ## FLAGS THAT DO NOT GET DROPPED (even on a fast build)

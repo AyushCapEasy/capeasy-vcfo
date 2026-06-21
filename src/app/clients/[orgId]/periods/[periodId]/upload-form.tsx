@@ -17,7 +17,7 @@ export function UploadForm({ orgId, periodId }: { orgId: string; periodId: strin
           name="file"
           accept=".csv,.xlsx,.xls"
           required
-          className="text-sm text-slate-500 file:mr-3 file:rounded-[var(--radius-ctl)] file:border file:border-slate-300 file:bg-white file:px-3.5 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-50"
+          className="text-sm text-muted file:mr-3 file:rounded-[var(--radius-ctl)] file:border file:border-line-strong file:bg-white file:px-3.5 file:py-2 file:text-sm file:font-medium file:text-body hover:file:bg-canvas"
         />
         <button type="submit" disabled={pending} className="btn btn-primary">
           {pending ? 'Uploading…' : 'Upload trial balance'}
