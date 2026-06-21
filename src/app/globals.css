@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 /* Dark-mode fix (root cause). The app has NO dark theme — it is light-only by design (body is
-   hardcoded bg-white/text-slate-900; no dark tokens, no toggle). But Tailwind v4's default
+   the warm bg-canvas/text-ink pair; no dark tokens, no toggle). But Tailwind v4's default
    `dark:` variant is @media (prefers-color-scheme: dark), so a dark-mode browser auto-activated a
-   half-built dark mode: some backgrounds went dark while text stayed the light slate — e.g. native
+   half-built dark mode: some backgrounds went dark while light text stayed light — e.g. native
    <select> option popups rendered dark-on-dark. Redefine `dark:` as class-based (only under a
    `.dark` ancestor, which never exists here) so it no longer responds to the OS preference. */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -12,9 +12,9 @@
    CapEasy vCFO — Design System (V1 redesign, m-redesign — warm-neutral, Claude Design canonical)
    Supersedes the V0 cool-slate system. Warm off-white surfaces, IBM Plex Sans + Source Serif 4,
    blue #1E4FA8 primary, restrained green for favourable. Color carries financial MEANING, not
-   decoration. This block is the single source of design truth; screens compose from it. Component
-   primitives below still use slate utilities — they are migrated to the warm tokens screen-by-screen
-   (Step 1 of the redesign adopts tokens + fonts only; no screen restyled yet).
+   decoration. This block is the single source of design truth; screens compose from it. Every
+   component primitive and screen is now on the warm tokens — the redesign is complete and the app
+   carries no cool-grey utilities anywhere.
    ============================================================================================ */
 @theme {
   --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;

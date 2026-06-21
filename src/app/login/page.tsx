@@ -15,13 +15,13 @@ export default async function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
           <p className="eyebrow tracking-[0.2em]">CapEasy</p>
-          <h1 className="mt-1.5 text-2xl font-bold text-slate-900">vCFO</h1>
-          <p className="mt-1 text-sm text-slate-500">Sign in to the MIS workspace</p>
+          <h1 className="mt-1.5 text-2xl font-bold text-ink">vCFO</h1>
+          <p className="mt-1 text-sm text-muted">Sign in to the MIS workspace</p>
         </div>
         <div className="card p-6 shadow-md">
           <LoginForm />
         </div>
-        <p className="mt-5 text-center text-xs text-slate-400">
+        <p className="mt-5 text-center text-xs text-muted">
           Internal access only. Accounts are provisioned by an administrator.
         </p>
       </div>

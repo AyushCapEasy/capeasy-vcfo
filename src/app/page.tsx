@@ -31,14 +31,14 @@ export default async function Home() {
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-line bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3.5">
           <div className="flex items-baseline gap-2">
-            <span className="text-sm font-semibold text-slate-900">CapEasy vCFO</span>
-            <span className="text-xs text-slate-400">MIS Engine</span>
+            <span className="text-sm font-semibold text-ink">CapEasy vCFO</span>
+            <span className="text-xs text-muted">MIS Engine</span>
           </div>
           <div className="flex items-center gap-3 text-sm">
-            <span className="text-slate-500">
+            <span className="text-muted">
               {profile?.full_name ?? profile?.email ?? user.email}
             </span>
             <form action={signOut}>
@@ -51,8 +51,8 @@ export default async function Home() {
       </header>
 
       <main className="mx-auto w-full max-w-5xl flex-1 p-6">
-        <h1 className="text-xl font-bold text-slate-900">Client workspaces</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-xl font-bold text-ink">Client workspaces</h1>
+        <p className="mt-1 text-sm text-muted">
           {orgs?.length
             ? `You have access to ${orgs.length} client ${orgs.length === 1 ? 'org' : 'orgs'} (RLS-scoped).`
             : 'No client orgs are visible to your account yet.'}
@@ -64,13 +64,13 @@ export default async function Home() {
               <li key={o.id}>
                 <Link
                   href={`/clients/${o.id}`}
-                  className="card block p-4 transition-all hover:border-slate-300 hover:shadow-md"
+                  className="card block p-4 transition-all hover:border-line-strong hover:shadow-md"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-slate-900">{o.legal_name}</span>
+                    <span className="font-semibold text-ink">{o.legal_name}</span>
                     <span className="badge badge-neutral">{roleByOrg.get(o.id) ?? '—'}</span>
                   </div>
-                  <p className="mt-1.5 text-xs text-slate-500">
+                  <p className="mt-1.5 text-xs text-muted">
                     {o.entity_type}
                     {o.state ? ` · ${o.state}` : ''}
                   </p>
@@ -79,7 +79,7 @@ export default async function Home() {
             ))}
           </ul>
         ) : (
-          <div className="card mt-5 p-10 text-center text-sm text-slate-500">
+          <div className="card mt-5 p-10 text-center text-sm text-muted">
             No client orgs are visible to your account yet. An administrator provisions access per client.
           </div>
         )}
