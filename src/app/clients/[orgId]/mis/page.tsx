@@ -12,7 +12,6 @@ import {
 import { computeObservations, GROUP_CODES, type Observation } from '@/lib/insight/observations';
 import { computeDiagnoses, type Diagnosis } from '@/lib/insight/diagnoses';
 import { computeRecommendations, computeGoalTracking, type Recommendation, type GoalTrack } from '@/lib/insight/recommendations';
-import { Watermark, StatusRibbon } from './watermark';
 import { Sparkline } from './sparkline';
 import { Commentary } from './commentary';
 
@@ -248,10 +247,7 @@ export default async function MisPage({ params, searchParams }: { params: Promis
 
   return (
     <div className="relative min-h-full bg-canvas">
-      <Watermark />
-      <StatusRibbon />
-
-      {/* Header */}
+      {/* Header (watermark + status ribbon now come from the client-workspace layout) */}
       <header className="border-b border-line bg-white">
         <div className="mx-auto max-w-5xl px-6 py-4">
           <div className="flex flex-wrap items-start justify-between gap-4">

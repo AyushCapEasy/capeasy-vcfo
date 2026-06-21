@@ -30,36 +30,36 @@ export default async function ClientWorkspace({ params }: { params: Promise<{ or
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center gap-2 px-6 py-3.5 text-sm">
-          <Link href="/" className="text-slate-400 hover:text-slate-600 hover:underline">CapEasy vCFO</Link>
-          <span className="text-slate-300">/</span>
-          <span className="font-semibold text-slate-900">{org.legal_name}</span>
-          <Link href={`/clients/${orgId}/mis`} className="btn btn-primary ml-auto px-3 py-1.5 text-xs">
-            View MIS pack →
-          </Link>
+      {/* Topbar */}
+      <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-line bg-white/85 px-8 py-4 backdrop-blur">
+        <div className="min-w-0">
+          <h1 className="font-serif text-[22px] font-semibold leading-tight tracking-[-0.01em] text-ink">Overview</h1>
+          <p className="mt-0.5 truncate text-[12.5px] text-muted">
+            {org.legal_name}{org.entity_type ? ` · ${org.entity_type}` : ''}{org.state ? ` · ${org.state}` : ''}
+          </p>
         </div>
+        <Link href={`/clients/${orgId}/mis`} className="btn btn-primary shrink-0">View MIS pack →</Link>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 p-6">
-        <h1 className="text-xl font-bold text-slate-900">Periods</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          {org.entity_type}{org.state ? ` · ${org.state}` : ''} — period-over-period is first-class; each new month chains to the last.
-        </p>
+      <main className="mx-auto w-full max-w-5xl flex-1 px-8 py-7">
+        <div>
+          <h2 className="text-sm font-semibold text-ink">Reporting periods</h2>
+          <p className="mt-0.5 text-[12.5px] text-muted">Period-over-period is first-class — each new month chains to the last.</p>
+        </div>
 
-        <ul className="card mt-5 divide-y divide-slate-100 overflow-hidden">
+        <ul className="card mt-4 divide-y divide-line overflow-hidden">
           {(periods ?? []).map((p) => (
             <li key={p.id}>
-              <Link href={`/clients/${orgId}/periods/${p.id}`} className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50">
-                <span className="font-medium text-slate-900">{p.label ?? monthLabel(p.period_month)}</span>
-                <span className="flex items-center gap-3 text-xs text-slate-400">
+              <Link href={`/clients/${orgId}/periods/${p.id}`} className="flex items-center justify-between px-5 py-3.5 transition-colors hover:bg-canvas">
+                <span className="font-medium text-ink">{p.label ?? monthLabel(p.period_month)}</span>
+                <span className="flex items-center gap-3 text-xs text-muted">
                   <span className="tnum">{taxYearLabel(p.period_month)}</span>
                   <span className={`badge ${STATUS_STYLE[p.status] ?? ''}`}>{p.status}</span>
                 </span>
               </Link>
             </li>
           ))}
-          {!periods?.length ? <li className="px-5 py-8 text-center text-sm text-slate-400">No periods yet — add the first one below.</li> : null}
+          {!periods?.length ? <li className="px-5 py-8 text-center text-sm text-muted">No periods yet — add the first one below.</li> : null}
         </ul>
 
         <form action={createPeriod.bind(null, orgId)} className="mt-6 flex items-end gap-3">
@@ -67,9 +67,7 @@ export default async function ClientWorkspace({ params }: { params: Promise<{ or
             <span className="label">New period (month)</span>
             <input type="month" name="month" required className="input w-auto" />
           </label>
-          <button type="submit" className="btn btn-primary">
-            Add period
-          </button>
+          <button type="submit" className="btn btn-primary">Add period</button>
         </form>
       </main>
     </div>
