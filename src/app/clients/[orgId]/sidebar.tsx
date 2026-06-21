@@ -52,7 +52,7 @@ export function Sidebar({ orgId, orgName, entityType }: { orgId: string; orgName
       <nav className="flex flex-col gap-[3px] px-3.5 py-1.5">
         <Link href={base} className={live(pathname === base)}><NavIcon d={I.overview} /><span>Overview</span></Link>
         <Link href={`${base}/mis`} className={live(onMis)}><NavIcon d={I.mis} /><span>MIS Pack</span></Link>
-        <span className={soon} title="Coming next"><NavIcon d={I.insights} /><span>Insights</span><span className="ml-auto text-[9px] font-semibold uppercase tracking-wide">soon</span></span>
+        <Link href={`${base}/insights`} className={live(pathname.startsWith(`${base}/insights`))}><NavIcon d={I.insights} /><span>Insights</span></Link>
         <span className={soon} title="Coming next"><NavIcon d={I.data} /><span>Data Sources</span><span className="ml-auto text-[9px] font-semibold uppercase tracking-wide">soon</span></span>
       </nav>
 

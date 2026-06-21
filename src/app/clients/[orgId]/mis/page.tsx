@@ -1,7 +1,7 @@
 // src/app/clients/[orgId]/mis/page.tsx — Management MIS Pack (Bible §5A). Investor-grade view that
 // renders ENTIRELY from the M5 engine results (via present.ts) — no metric is recomputed here. Every
-// number traces to a PeriodResult field; drill-down opens the mapped source accounts. A persistent
-// SAMPLE watermark (single flag in src/lib/watermark.ts) marks the whole pack UNVERIFIED until CA.
+// number traces to a PeriodResult field; drill-down opens the mapped source accounts. The SAMPLE
+// watermark + status ribbon come from the shared client layout; the insight layer lives on /insights.
 import Link from 'next/link';
 import { redirect, notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -9,9 +9,6 @@ import { getMisChain, getPeriodDrilldown, type DrilldownLine } from '@/lib/engin
 import {
   pnlRows, bsAssetRows, bsLiabEquityRows, cfRows, ratioCards, kpis, trendSeries, inr, type StmtRow,
 } from '@/lib/mis/present';
-import { computeObservations, GROUP_CODES, type Observation } from '@/lib/insight/observations';
-import { computeDiagnoses, type Diagnosis } from '@/lib/insight/diagnoses';
-import { computeRecommendations, computeGoalTracking, type Recommendation, type GoalTrack } from '@/lib/insight/recommendations';
 import { Sparkline } from './sparkline';
 import { Commentary } from './commentary';
 
@@ -95,120 +92,6 @@ function StatementBlock({ rows, drilldown }: { rows: StmtRow[]; drilldown: Recor
   );
 }
 
-// Tier 1 observations (M7) into the selected period, with reuse of the existing by-code drill-down.
-function ObservationsBlock({ observations, drilldown }: { observations: Observation[]; drilldown: Record<string, DrilldownLine[]> }) {
-  if (!observations.length) {
-    return <p className="px-5 py-8 text-sm text-muted">No period-over-period move cleared the notability thresholds for this period (or it is the first period). Nothing is fabricated — honest silence.</p>;
-  }
-  return (
-    <div className="divide-y divide-line">
-      {observations.map((o) => {
-        const codes = [...new Set(o.traces.flatMap((t) => t.categoryGroups).flatMap((g) => GROUP_CODES[g]))];
-        const accounts = codes.flatMap((c) => drilldown[c] ?? []);
-        const enginePaths = [...new Set(o.traces.map((t) => t.enginePath))];
-        return (
-          <details key={o.id} className="group">
-            <summary className="flex cursor-pointer list-none items-start gap-2.5 px-5 py-3 text-sm hover:bg-canvas">
-              <svg className="mt-1 h-3 w-3 shrink-0 text-muted transition-transform group-open:rotate-90" viewBox="0 0 12 12"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
-              <span className="flex-1 leading-relaxed text-body">{o.statement}</span>
-              <span className="badge badge-neutral mt-0.5 shrink-0">{o.status}</span>
-            </summary>
-            <div className="space-y-1 bg-canvas/60 px-5 pb-3 pl-10 text-xs text-muted">
-              <p>
-                Traces to engine field{enginePaths.length > 1 ? 's' : ''}:{' '}
-                {enginePaths.map((p) => <code key={p} className="mr-1 rounded bg-white px-1 py-0.5 text-[11px] text-body">{p}</code>)}
-                <span className="text-muted"> · unverified</span>
-              </p>
-              {accounts.length ? (
-                <table className="w-full"><tbody>
-                  {accounts.map((a) => (
-                    <tr key={a.code}><td className="py-0.5">{a.code} · {a.name}</td><td className="tnum py-0.5 pl-4 text-right whitespace-nowrap">{a.debitPaise ? `${inr(a.debitPaise)} Dr` : `${inr(a.creditPaise)} Cr`}</td></tr>
-                  ))}
-                </tbody></table>
-              ) : <p className="text-muted">No mapped source accounts for these lines in this period.</p>}
-            </div>
-          </details>
-        );
-      })}
-    </div>
-  );
-}
-
-// Tier 2 — diagnoses (rule-based "why"; each move decomposed into engine-field drivers).
-function DiagnosesBlock({ diagnoses }: { diagnoses: Diagnosis[] }) {
-  if (!diagnoses.length) return <p className="px-5 py-8 text-sm text-muted">No observations this period, so nothing to diagnose.</p>;
-  const fmt = (dr: Diagnosis['drivers'][number]) =>
-    dr.contributionPp !== undefined ? `${dr.contributionPp >= 0 ? '+' : '−'}${Math.abs(dr.contributionPp).toFixed(2)}pp`
-      : dr.contributionPaise !== undefined ? inr(dr.contributionPaise)
-        : dr.effectAbs !== undefined ? `${dr.effectAbs >= 0 ? '+' : '−'}${Math.abs(dr.effectAbs).toFixed(2)}` : '';
-  return (
-    <div className="divide-y divide-line">
-      {diagnoses.map((d) => (
-        <details key={d.observationId} className="group">
-          <summary className="flex cursor-pointer list-none items-start gap-2.5 px-5 py-3 text-sm hover:bg-canvas">
-            <svg className="mt-1 h-3 w-3 shrink-0 text-muted transition-transform group-open:rotate-90" viewBox="0 0 12 12"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
-            <span className="flex-1 leading-relaxed text-body"><span className="font-semibold text-ink">{d.metric}</span> — {d.cause}</span>
-            <span className="badge badge-neutral mt-0.5 shrink-0">{d.status}</span>
-          </summary>
-          <div className="bg-canvas/60 px-5 pb-3 pl-10 text-xs text-muted">
-            <p className="mb-1 text-[11px] text-muted">rule {d.ruleId} · {d.decomposition}{d.decomposition === 'single_factor' ? ' (ceteris-paribus, not additive)' : ''}</p>
-            {d.drivers.length ? (
-              <table className="w-full"><tbody>
-                {d.drivers.map((dr, i) => (
-                  <tr key={i}><td className="py-0.5">{dr.driver} <span className="text-muted">· {dr.detail}</span></td><td className="tnum py-0.5 pl-4 text-right whitespace-nowrap">{fmt(dr)}</td></tr>
-                ))}
-              </tbody></table>
-            ) : <p className="text-muted">n/a — driver split not derivable from engine fields (not fabricated).</p>}
-          </div>
-        </details>
-      ))}
-    </div>
-  );
-}
-
-// Tier 3 — recommendations (advice with quantified impact from engine figures).
-function RecommendationsBlock({ recs }: { recs: Recommendation[] }) {
-  if (!recs.length) return <p className="px-5 py-8 text-sm text-muted">No recommendations — no observed move this period implies an actionable lever (favourable moves don&apos;t generate advice). Nothing fabricated.</p>;
-  return (
-    <ul className="divide-y divide-line">
-      {recs.map((r, i) => (
-        <li key={i} className="px-5 py-3.5 text-sm">
-          <div className="flex items-start gap-2.5">
-            <span className="mt-1.5 h-3.5 w-0.5 shrink-0 rounded-full bg-accent" aria-hidden />
-            <div className="flex-1">
-              <div className="flex items-start gap-2">
-                <span className="flex-1 font-medium text-ink">{r.action}</span>
-                <span className="badge badge-neutral mt-0.5 shrink-0">{r.status}</span>
-              </div>
-              <p className="mt-1 text-xs text-muted"><span className="font-medium text-body">Impact:</span> {r.quantifiedImpact.basis}</p>
-              <p className="mt-0.5 text-[11px] text-muted">rule {r.ruleId} · confidence {r.confidence} · traces {r.quantifiedImpact.traces.join(', ')}</p>
-            </div>
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-// Tier 3 — goal tracking (trajectory vs PLACEHOLDER target, D-013).
-function GoalsBlock({ goals }: { goals: GoalTrack[] }) {
-  const badge = (s: GoalTrack['trackStatus']) => s === 'on_track' ? 'badge-positive' : s === 'off_track' ? 'badge-negative' : 'badge-neutral';
-  return (
-    <div className="divide-y divide-line">
-      <p className="flex items-start gap-1.5 border-b border-amber-200/60 bg-amber-50/60 px-5 py-2.5 text-xs text-amber-700">
-        <span aria-hidden>⚠</span>
-        <span>Targets are PLACEHOLDER stubs (D-013) — real analyst-entered client goals are a TODO. The tracking logic below is live against the engine.</span>
-      </p>
-      {goals.map((g) => (
-        <div key={g.goalId} className="flex items-start gap-2 px-5 py-3 text-sm">
-          <span className="flex-1 text-body"><span className="font-semibold text-ink">{g.metric}</span> <span className="text-muted">· {g.detail}</span></span>
-          <span className={`badge shrink-0 ${badge(g.trackStatus)}`}>{g.trackStatus.replace('_', ' ')}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export default async function MisPage({ params, searchParams }: { params: Promise<{ orgId: string }>; searchParams: Promise<{ p?: string }> }) {
   const { orgId } = await params;
   const { p } = await searchParams;
@@ -235,11 +118,6 @@ export default async function MisPage({ params, searchParams }: { params: Promis
   const periodMeta = chain.periods[selectedIdx];
   const result = chain.results[selectedIdx];
   const drilldown = await getPeriodDrilldown(periodMeta.id);
-  // M7 Tier 1: deterministic observations for the move INTO the selected period (vs its prior).
-  const observations = computeObservations(chain.results).filter((o) => o.periodsCompared[1] === periodMeta.label);
-  const diagnoses = computeDiagnoses(observations, chain.results);              // Tier 2
-  const recommendations = computeRecommendations(observations, diagnoses, chain.results); // Tier 3
-  const goalTracking = computeGoalTracking(chain.results);                      // Tier 3 (placeholder targets, D-013)
 
   const kpiCards = kpis(chain.results, selectedIdx);
   const cf = cfRows(result);
@@ -247,17 +125,12 @@ export default async function MisPage({ params, searchParams }: { params: Promis
 
   return (
     <div className="relative min-h-full bg-canvas">
-      {/* Header (watermark + status ribbon now come from the client-workspace layout) */}
+      {/* Header (watermark + status ribbon come from the client-workspace layout). */}
       <header className="border-b border-line bg-white">
         <div className="mx-auto max-w-5xl px-6 py-4">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 text-xs text-muted">
-                <Link href="/" className="hover:underline">CapEasy vCFO</Link>
-                <span>/</span>
-                <Link href={`/clients/${orgId}`} className="hover:underline">{chain.org.legalName}</Link>
-              </div>
-              <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink">Management MIS Pack</h1>
+              <h1 className="font-serif text-2xl font-semibold tracking-tight text-ink">Management MIS Pack</h1>
               <p className="mt-0.5 text-sm text-muted">
                 {chain.org.legalName} · {periodMeta.label}
                 <span className={`badge ml-2 ${STATUS_STYLE[periodMeta.status] ?? ''}`}>{periodMeta.status}</span>
@@ -265,6 +138,7 @@ export default async function MisPage({ params, searchParams }: { params: Promis
             </div>
             <div className="flex flex-col items-end gap-2.5">
               <div className="flex gap-2">
+                <Link href={`/clients/${orgId}/insights?p=${periodMeta.id}`} className="btn btn-ghost">Insights →</Link>
                 <a href={`/clients/${orgId}/mis/pdf?p=${periodMeta.id}`} className="btn btn-primary">Export PDF</a>
                 <a href={`/clients/${orgId}/mis/workbook?p=${periodMeta.id}`} className="btn btn-secondary">Download workbook</a>
               </div>
@@ -313,30 +187,6 @@ export default async function MisPage({ params, searchParams }: { params: Promis
           )}
         </Section>
 
-        {/* Observations (M7 Tier 1) */}
-        <Section
-          title="Observations"
-          subtitle="Tier 1 · deterministic period-over-period changes that cleared the notability thresholds — no interpretation"
-          right={<span className="rounded bg-amber-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-amber-700 uppercase ring-1 ring-inset ring-amber-600/20">Unverified — pending CA</span>}
-        >
-          <ObservationsBlock observations={observations} drilldown={drilldown} />
-        </Section>
-
-        {/* Diagnoses (M8 Tier 2) */}
-        <Section title="Diagnoses" subtitle="Tier 2 · rule-based 'why' — each move decomposed into engine-field drivers (interpretation; CA must validate the rules)" right={<span className="rounded bg-amber-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-amber-700 uppercase ring-1 ring-inset ring-amber-600/20">Unverified — pending CA</span>}>
-          <DiagnosesBlock diagnoses={diagnoses} />
-        </Section>
-
-        {/* Recommendations (M8 Tier 3) */}
-        <Section title="Recommendations" subtitle="Tier 3 · actions with quantified impact from engine figures (advice; CA must validate the rules)" right={<span className="rounded bg-amber-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-amber-700 uppercase ring-1 ring-inset ring-amber-600/20">Unverified — pending CA</span>}>
-          <RecommendationsBlock recs={recommendations} />
-        </Section>
-
-        {/* Goal tracking (M8 Tier 3) */}
-        <Section title="Goal tracking" subtitle="Tier 3 · trajectory vs target — PLACEHOLDER targets (D-013)" right={<span className="rounded bg-amber-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-amber-700 uppercase ring-1 ring-inset ring-amber-600/20">Unverified — pending CA</span>}>
-          <GoalsBlock goals={goalTracking} />
-        </Section>
-
         {/* Ratios */}
         <Section title="Key ratios &amp; working capital" subtitle="§4.2–4.3">
           <div className="grid grid-cols-2 gap-px bg-hair sm:grid-cols-3 lg:grid-cols-4">
@@ -373,7 +223,7 @@ export default async function MisPage({ params, searchParams }: { params: Promis
         </Section>
 
         <p className="pb-4 text-center text-xs text-muted">
-          Generated by CapEasy vCFO · engine statements <span className="font-semibold">CONSISTENCY-CHECKED</span> (identity battery); insight layer + accounting conventions pending one-time CA rule-review — <span className="font-semibold">NOT VERIFIED</span>.
+          Generated by CapEasy vCFO · engine statements <span className="font-semibold">CONSISTENCY-CHECKED</span> (identity battery); insight layer (now on the <Link href={`/clients/${orgId}/insights?p=${periodMeta.id}`} className="font-medium text-primary hover:underline">Insights</Link> tab) + accounting conventions pending one-time CA rule-review — <span className="font-semibold">NOT VERIFIED</span>.
         </p>
       </main>
     </div>
