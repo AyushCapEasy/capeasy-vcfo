@@ -19,7 +19,6 @@ export function Sidebar({ orgId, orgName, entityType }: { orgId: string; orgName
   const onMis = pathname.startsWith(`${base}/mis`) || pathname.startsWith(`${base}/periods`);
   const live = (active: boolean) =>
     `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${active ? 'bg-primary-50 font-semibold text-primary' : 'font-medium text-body hover:bg-hair'}`;
-  const soon = 'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-faint cursor-default';
 
   return (
     <aside className="sticky top-0 z-30 flex h-screen w-64 shrink-0 flex-col self-start border-r border-line bg-white">
@@ -53,7 +52,7 @@ export function Sidebar({ orgId, orgName, entityType }: { orgId: string; orgName
         <Link href={base} className={live(pathname === base)}><NavIcon d={I.overview} /><span>Overview</span></Link>
         <Link href={`${base}/mis`} className={live(onMis)}><NavIcon d={I.mis} /><span>MIS Pack</span></Link>
         <Link href={`${base}/insights`} className={live(pathname.startsWith(`${base}/insights`))}><NavIcon d={I.insights} /><span>Insights</span></Link>
-        <span className={soon} title="Coming next"><NavIcon d={I.data} /><span>Data Sources</span><span className="ml-auto text-[9px] font-semibold uppercase tracking-wide">soon</span></span>
+        <Link href={`${base}/data-sources`} className={live(pathname.startsWith(`${base}/data-sources`))}><NavIcon d={I.data} /><span>Data Sources</span></Link>
       </nav>
 
       {/* Footer — honest unverified status (reinforces the watermark) */}
