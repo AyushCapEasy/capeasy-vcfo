@@ -236,3 +236,45 @@ test('GAP-1 closing-stock credit: COGS = purchases − closing stock, statements
   assert.equal(adj.bs.lines.find((l) => l.category === 'inventory')!.valuePaise, 2000000); // stock still on BS
   assert.equal(adj.checks.plTiesToBs, true);   // crediting the unbooked stock makes P&L articulate with BS
 });
+
+// GAP-1 (opening-stock gap) — a CONTINUING business carries opening stock from the prior year, so
+// COGS = opening stock + purchases − closing stock. Opening comes from (A) an operator-supplied figure,
+// or (B) derivation from <STOCKITEM> opening values; (C) when neither is available it is assumed nil
+// (first-year-correct) and FLAGGED. Synthetic: closing ₹20,000, purchases ₹30,000, sales ₹50,000.
+test('GAP-1 opening stock — continuing business: COGS = opening + purchases − closing (supplied / derived / flagged)', () => {
+  const mk = (extra: string) => `<ENVELOPE><BODY>
+<LEDGER NAME="Closing Stock"><PARENT>Stock-in-Hand</PARENT><OPENINGBALANCE>-20000.00</OPENINGBALANCE></LEDGER>
+<LEDGER NAME="Sales"><PARENT>Sales Accounts</PARENT></LEDGER>
+<LEDGER NAME="Purchases"><PARENT>Purchase Accounts</PARENT></LEDGER>
+<LEDGER NAME="Bank"><PARENT>Bank Accounts</PARENT></LEDGER>
+${extra}
+</BODY></ENVELOPE>`;
+  const DAYBOOK = `<ENVELOPE><BODY>
+<VOUCHER><VOUCHERTYPENAME>Sales</VOUCHERTYPENAME>
+  <ALLLEDGERENTRIES.LIST><LEDGERNAME>Bank</LEDGERNAME><AMOUNT>-50000.00</AMOUNT></ALLLEDGERENTRIES.LIST>
+  <ALLLEDGERENTRIES.LIST><LEDGERNAME>Sales</LEDGERNAME><AMOUNT>50000.00</AMOUNT></ALLLEDGERENTRIES.LIST>
+</VOUCHER>
+<VOUCHER><VOUCHERTYPENAME>Purchase</VOUCHERTYPENAME>
+  <ALLLEDGERENTRIES.LIST><LEDGERNAME>Purchases</LEDGERNAME><AMOUNT>-30000.00</AMOUNT></ALLLEDGERENTRIES.LIST>
+  <ALLLEDGERENTRIES.LIST><LEDGERNAME>Bank</LEDGERNAME><AMOUNT>30000.00</AMOUNT></ALLLEDGERENTRIES.LIST>
+</VOUCHER>
+</BODY></ENVELOPE>`;
+  const cogs = (r: ReturnType<typeof reconstructFromTallyExports>) => r.statements.pl.lines.find((l) => l.category === 'cogs')!.valuePaise;
+
+  // (A) operator-supplied opening stock ₹15,000 → COGS = 15,000 + 30,000 − 20,000 = ₹25,000.
+  const supplied = reconstructFromTallyExports(mk(''), DAYBOOK, { openingStockPaise: 1500000 });
+  assert.equal(cogs(supplied), 2500000);
+  assert.equal(supplied.statements.pl.netProfitPaise, 2500000);        // 50,000 − 25,000
+  assert.equal(supplied.statements.pl.closingStockCreditPaise, 500000); // closing 20,000 − opening 15,000
+  assert.ok(supplied.parse.warnings.some((w) => /operator-supplied/.test(w)));
+
+  // (B) opening stock DERIVED from a <STOCKITEM> OPENINGVALUE ₹15,000 → same COGS, no manual input.
+  const derived = reconstructFromTallyExports(mk('<STOCKITEM NAME="Widget"><OPENINGVALUE>15000.00</OPENINGVALUE></STOCKITEM>'), DAYBOOK);
+  assert.equal(cogs(derived), 2500000);
+  assert.ok(derived.parse.warnings.some((w) => /derived from 1 stock-item/.test(w)));
+
+  // (C) neither supplied nor derivable → assumed nil (first-year-correct: COGS = 30,000 − 20,000) + FLAG.
+  const nil = reconstructFromTallyExports(mk(''), DAYBOOK);
+  assert.equal(cogs(nil), 1000000);
+  assert.ok(nil.parse.warnings.some((w) => /ASSUMED NIL/.test(w) && /CONTINUING/.test(w)));
+});

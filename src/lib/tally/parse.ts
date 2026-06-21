@@ -178,3 +178,20 @@ export function parseTallyDayBook(xml: string): TallyDayBookParse {
   }
   return { postingsDrPaise, voucherCount, postingCount, postingSumPaise };
 }
+
+export type TallyOpeningStock = { openingStockPaise: number; stockItems: number; itemsWithOpening: number };
+
+/** Opening-stock VALUE (period start) summed from `<STOCKITEM>` master `<OPENINGVALUE>` tags — present
+ *  only when the business maintains item-wise inventory. Returns 0 (itemsWithOpening 0) when stock is
+ *  held only as a Stock-in-Hand LEDGER balance (then opening stock must be operator-supplied for a
+ *  continuing business — the current-period export carries only the CLOSING balance). This is the
+ *  derivation source for opening stock in `closing-stock-adjusted` COGS = opening + purchases − closing. */
+export function parseTallyOpeningStock(mastersXml: string): TallyOpeningStock {
+  let openingStockPaise = 0, stockItems = 0, itemsWithOpening = 0;
+  for (const it of mastersXml.match(/<STOCKITEM\b[\s\S]*?<\/STOCKITEM>/gi) ?? []) {
+    stockItems++;
+    const v = Math.abs(tallyAmountToPaise(tag(it, 'OPENINGVALUE'))); // opening stock value (positive asset)
+    if (v !== 0) { openingStockPaise += v; itemsWithOpening++; }
+  }
+  return { openingStockPaise, stockItems, itemsWithOpening };
+}
