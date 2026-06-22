@@ -5,6 +5,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { readFileToGrid, parseGrid } from '@/lib/intake/parse';
+import { tallyXmlToGrid } from '@/lib/intake/tally-grid';
 import { getPeriodIntake } from '@/lib/intake/server-data';
 import { COLUMN_ROLES, type ColumnOverride } from '@/lib/intake/types';
 
@@ -15,13 +16,27 @@ const revalidate = (orgId: string, periodId: string) => revalidatePath(`/clients
 // 1) Upload → STAGE only. Garbage/unreadable files are blocked here (never staged).
 export async function uploadTb(orgId: string, periodId: string, _prev: UploadState, formData: FormData): Promise<UploadState> {
   const file = formData.get('file');
-  if (!(file instanceof File) || file.size === 0) return { ok: false, errors: [{ message: 'Choose a CSV or XLSX file to upload.' }] };
+  if (!(file instanceof File) || file.size === 0) return { ok: false, errors: [{ message: 'Choose a CSV, XLSX, or Tally XML file to upload.' }] };
 
-  const grid = readFileToGrid({ buffer: Buffer.from(await file.arrayBuffer()), filename: file.name });
-  if (!grid.ok) return { ok: false, errors: grid.errors.map((e) => ({ message: e.message, detail: e.detail })) };
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+
+  // Tally XML export → reconstructed IN-MEMORY into the canonical TB grid (D-014: only the grid persists,
+  // then the analyst confirms it into trial_balance_lines via the same path as a CSV/XLSX upload).
+  // Everything else → the CSV/XLSX grid reader.
+  let gridCells: string[][];
+  if (ext === 'xml') {
+    const t = tallyXmlToGrid(buffer);
+    if (!t.ok) return { ok: false, errors: [{ message: t.error, detail: t.detail }] };
+    gridCells = t.grid;
+  } else {
+    const g = readFileToGrid({ buffer, filename: file.name });
+    if (!g.ok) return { ok: false, errors: g.errors.map((e) => ({ message: e.message, detail: e.detail })) };
+    gridCells = g.grid;
+  }
 
   // Pre-check column detection so an unrecognised layout is blocked before staging.
-  const preview = parseGrid(grid.grid);
+  const preview = parseGrid(gridCells);
   if (!preview.ok) return { ok: false, errors: preview.errors.map((e) => ({ message: e.message, detail: e.detail })) };
 
   const supabase = await createClient();
@@ -30,13 +45,13 @@ export async function uploadTb(orgId: string, periodId: string, _prev: UploadSta
     period_id: periodId,
     org_id: orgId,
     filename: file.name,
-    raw_grid: grid.grid,
+    raw_grid: gridCells,
     column_override: null,
   });
   if (error) return { ok: false, errors: [{ message: 'Could not stage the file.', detail: error.message }] };
 
   try {
-    await supabase.from('audit_log').insert({ org_id: orgId, action: 'tb.stage', target_table: 'periods', target_id: periodId, detail: { file: file.name, rows: preview.rows.length } });
+    await supabase.from('audit_log').insert({ org_id: orgId, action: 'tb.stage', target_table: 'periods', target_id: periodId, detail: { file: file.name, rows: preview.rows.length, source: ext === 'xml' ? 'tally_xml' : 'file' } });
   } catch {
     // non-critical
   }
