@@ -29,7 +29,7 @@ export default async function LoginPage() {
           {signupOpen ? (
             <>New to Saral? <Link href="/signup" className="font-medium text-primary hover:underline">Create an account</Link></>
           ) : (
-            'Saral is in private testing — access is invite-only for now.'
+            'Saral is in private testing — self-serve signups open soon.'
           )}
         </p>
       </div>
