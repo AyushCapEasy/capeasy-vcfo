@@ -8,7 +8,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, basename } from 'node:path';
 import { createHash } from 'node:crypto';
-import { loadEnv, REF } from './_env.mjs';
+import { loadEnv } from './_env.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MIG_DIR = resolve(__dirname, '..', 'supabase', 'migrations');
@@ -68,7 +68,7 @@ try {
     }
   }
 
-  console.log(`\nMigrations @ ${REF}: ${files.length} total, ${STATUS_ONLY ? pending + ' pending' : ran + ' applied this run'}.`);
+  console.log(`\nMigrations @ ${env.SUPABASE_PROJECT_REF}: ${files.length} total, ${STATUS_ONLY ? pending + ' pending' : ran + ' applied this run'}.`);
 } finally {
   await client.end();
 }

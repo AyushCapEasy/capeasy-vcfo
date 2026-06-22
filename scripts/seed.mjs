@@ -11,7 +11,9 @@
 //   node scripts/seed.mjs
 import { loadEnv } from './_env.mjs';
 
-const env = loadEnv();
+// HARD FENCE (D-014): the demo seed (creates Acme/Globex fake orgs) must NEVER run against prod.
+if (process.argv.includes('--prod')) throw new Error('BLOCKED — db:seed must NEVER run against prod. Demo only (D-014).');
+const env = loadEnv({ target: 'demo' });
 const { default: pg } = await import('pg');
 
 const R = (rupees) => Math.round(rupees * 100); // rupees -> paise (integer money, §5)

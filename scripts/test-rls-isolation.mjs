@@ -18,10 +18,13 @@
 //
 // Passwords are random per run and never printed. Idempotent. Run: npm run test:rls
 import { randomBytes } from 'node:crypto';
-import { loadEnv, REF } from './_env.mjs';
+import { loadEnv } from './_env.mjs';
 
+// Runs against DEMO by default, or PROD with `--prod` (loads .env.production.local). The expected project
+// ref comes from the loaded+validated env, so this launch gate can be proven on PROD (gate B3) too.
 const env = loadEnv();
-if (env.NEXT_PUBLIC_SUPABASE_URL !== 'https://' + REF + '.supabase.co') throw new Error('BLOCKED — wrong project URL.');
+const ref = env.SUPABASE_PROJECT_REF;
+if (env.NEXT_PUBLIC_SUPABASE_URL !== 'https://' + ref + '.supabase.co') throw new Error('BLOCKED — NEXT_PUBLIC_SUPABASE_URL does not match the loaded project ref ' + ref + '.');
 if (!env.SUPABASE_SERVICE_ROLE_KEY || /REPLACE_/.test(env.SUPABASE_SERVICE_ROLE_KEY)) throw new Error('BLOCKED — service_role missing.');
 
 const url = env.NEXT_PUBLIC_SUPABASE_URL;
