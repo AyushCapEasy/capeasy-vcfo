@@ -77,7 +77,8 @@ test('PARSE INCOMPLETE: too many unread rows → the gap is SUPPRESSED, not asse
     ['03-04', '###'], ['04-04', 'NA'], ['05-04', 'err'], ['06-04', '-'],
   ]);
   assert.ok(bank.unreadRows >= 4);
-  const o = buildOverlay({ ...books, receipts: [] }, bank, null);
+  // receipts ARE present (matching is possible) — so it's the unreliable PARSE, not missing data, that suppresses
+  const o = buildOverlay({ ...books, receipts: [{ amountPaise: 1_00_000 * R }] }, bank, null);
   assert.equal(o.bank!.reliable, false);
   assert.equal(o.insights.filter((f) => f.kind === 'uninvoiced_receipt').length, 0, 'no gap asserted from an unreliable parse');
   assert.ok(o.parseWarnings.some((f) => f.kind === 'parse_incomplete'), 'flagged as parse-incomplete instead');

@@ -208,8 +208,11 @@ export function reconcileBank(books: Books, bank: BankStatement): BankRecon {
   const reliable = !significantlyIncomplete(bank.unreadRows, bank.totalRows);
   flags.push(...parseFlagsToRecon(reliable ? 'parse_incomplete' : 'parse_incomplete', bank.parseFlags));
 
-  // Line-level matching against itemised book receipts (when the books carry them).
-  let matchedCount = 0, matchedPaise = 0, uninvoicedPaise = bankCreditsPaise;
+  // Line-level matching needs itemised book receipts OR a collections total. Comparing bank CASH
+  // against booked ACCRUAL revenue alone is apples-to-oranges (timing/AR) → we do NOT assert a gap
+  // from it; we show the bank summary and say what richer data would unlock.
+  const canMatch = !!((books.receipts && books.receipts.length) || books.bookedCollectionsPaise !== undefined);
+  let matchedCount = 0, matchedPaise = 0, uninvoicedPaise = 0;
   if (books.receipts && books.receipts.length) {
     const used = new Array(credits.length).fill(false);
     for (const rcpt of books.receipts) {
@@ -221,18 +224,16 @@ export function reconcileBank(books: Books, bank: BankStatement): BankRecon {
   } else if (books.bookedCollectionsPaise !== undefined) {
     matchedPaise = Math.min(bankCreditsPaise, books.bookedCollectionsPaise);
     uninvoicedPaise = bankCreditsPaise - books.bookedCollectionsPaise; // bank in excess of booked collections
-  } else {
-    uninvoicedPaise = bankCreditsPaise - books.bookedRevenuePaise; // coarsest proxy
   }
 
-  if (reliable && uninvoicedPaise > MATERIAL_PAISE) {
+  if (canMatch && reliable && uninvoicedPaise > MATERIAL_PAISE) {
     flags.push({
       kind: 'uninvoiced_receipt', severity: 'risk', amountPaise: uninvoicedPaise,
       headline: `${inr(uninvoicedPaise)} of bank receipts have no matching invoice/booking — possible unrecorded revenue or a timing gap.`,
       detail: 'Bank money received that the books do not account for. Check for missed invoices or deposits booked in a later period.',
       traces: [{ label: 'Bank credits', value: inr(bankCreditsPaise) }, { label: 'Matched to books', value: inr(matchedPaise) }, { label: 'Unmatched', value: inr(uninvoicedPaise) }],
     });
-  } else if (reliable && uninvoicedPaise < -MATERIAL_PAISE) {
+  } else if (canMatch && reliable && uninvoicedPaise < -MATERIAL_PAISE) {
     flags.push({
       kind: 'booked_not_banked', severity: 'watch', amountPaise: -uninvoicedPaise,
       headline: `${inr(-uninvoicedPaise)} of booked receipts haven't hit the bank — a timing gap to confirm (or receipts recorded that didn't arrive).`,
@@ -242,7 +243,10 @@ export function reconcileBank(books: Books, bank: BankStatement): BankRecon {
   }
   if (!reliable) flags.push({ kind: 'parse_incomplete', severity: 'parse', amountPaise: null, headline: `Bank file is ${Math.round((bank.unreadRows / Math.max(1, bank.totalRows)) * 100)}% unread — reconciliation gaps suppressed to avoid a false flag.`, detail: 'Too many rows failed to parse to trust the totals. Fix/re-export the file.', traces: [] });
 
-  const note = reliable ? 'Books are the source of truth; the bank statement is the cross-check.' : 'Parse incomplete — totals unreliable; fix the file before trusting any gap.';
+  const note = !canMatch
+    ? 'Bank summary shown; line-level invoice matching needs invoice-level data (connect Tally/Zoho). Books remain the source of truth.'
+    : reliable ? 'Books are the source of truth; the bank statement is the cross-check.'
+      : 'Parse incomplete — totals unreliable; fix the file before trusting any gap.';
   return { available: true, reliable, matchedCount, matchedPaise, bankCreditsPaise, bankDebitsPaise, read, flags, note };
 }
 
