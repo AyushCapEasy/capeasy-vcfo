@@ -11,9 +11,9 @@
 //   node scripts/seed.mjs
 import { loadEnv } from './_env.mjs';
 
-// HARD FENCE (D-014): the demo seed (creates Acme/Globex fake orgs) must NEVER run against prod.
-if (process.argv.includes('--prod')) throw new Error('BLOCKED — db:seed must NEVER run against prod. Demo only (D-014).');
-const env = loadEnv({ target: 'demo' });
+// Single-project model: this seeds a re-seedable DEMO org (Acme) into the one shared project. It coexists
+// with any real client orgs, isolated by RLS — re-seed on demand for testing; delete via clean-prod.
+const env = loadEnv();
 const { default: pg } = await import('pg');
 
 const R = (rupees) => Math.round(rupees * 100); // rupees -> paise (integer money, §5)

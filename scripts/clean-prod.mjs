@@ -38,6 +38,19 @@ await db.connect();
 
 const n = async (sql, params = []) => Number((await db.query(sql, params)).rows[0].n);
 
+// audit_log is hard append-only (a trigger blocks UPDATE/DELETE for ALL roles), and an org can't be deleted
+// while audit rows reference it (ON DELETE SET NULL fires the blocked UPDATE). Administrative cleanup briefly
+// disables that guard (owner-only) and ALWAYS re-enables it.
+async function withAuditMutable(fn) {
+  await db.query(`alter table public.audit_log disable trigger audit_log_no_update`);
+  await db.query(`alter table public.audit_log disable trigger audit_log_no_delete`);
+  try { return await fn(); }
+  finally {
+    await db.query(`alter table public.audit_log enable trigger audit_log_no_update`);
+    await db.query(`alter table public.audit_log enable trigger audit_log_no_delete`);
+  }
+}
+
 try {
   console.log(`\n=== DATABASE INVENTORY — project ${env.SUPABASE_PROJECT_REF} ${EXECUTE ? '(EXECUTE MODE)' : '(DRY-RUN — nothing will be deleted)'} ===\n`);
 
@@ -94,22 +107,31 @@ try {
     console.log('\nDRY-RUN — nothing was deleted. Re-run with --execute (after approval) to perform the deletions above.');
     process.exitCode = 0;
   } else {
-    // ---- Execute (transactional for the public-schema deletions) ---------
+    // ---- Execute (audit guard disabled for the admin window; public-schema deletes in a transaction) ----
     console.log('\nExecuting deletions...');
-    await db.query('begin');
-    for (const o of demoOrgs) {
-      // audit_log.org_id is ON DELETE SET NULL — delete its rows explicitly BEFORE removing the org.
-      await db.query(`delete from public.audit_log where org_id=$1`, [o.id]);
-      await db.query(`delete from public.orgs where id=$1`, [o.id]); // cascades periods/TB/schedules/staging/mappings/org_members
-      console.log(`  ✓ deleted org "${o.legal_name}" and its dependent data`);
-    }
-    await db.query('commit');
+    await withAuditMutable(async () => {
+      await db.query('begin');
+      try {
+        for (const o of demoOrgs) {
+          // audit_log.org_id is ON DELETE SET NULL — delete its rows explicitly BEFORE removing the org.
+          await db.query(`delete from public.audit_log where org_id=$1`, [o.id]);
+          await db.query(`delete from public.orgs where id=$1`, [o.id]); // cascades periods/TB/schedules/staging/mappings/org_members
+          console.log(`  ✓ deleted org "${o.legal_name}" and its dependent data`);
+        }
+        if (PURGE_USERS) {
+          // audit_log.actor_id has no ON DELETE rule → clear those rows before deleting the users.
+          for (const u of testUsers) await db.query(`delete from public.audit_log where actor_id=$1`, [u.id]);
+        }
+        await db.query('commit');
+      } catch (e) {
+        await db.query('rollback');
+        throw e;
+      }
+    });
 
     if (PURGE_USERS && admin) {
       for (const u of testUsers) {
-        // audit_log.actor_id has no ON DELETE rule → clear those rows first, then delete the user (cascades profile/memberships).
-        await db.query(`delete from public.audit_log where actor_id=$1`, [u.id]);
-        const { error } = await admin.auth.admin.deleteUser(u.id);
+        const { error } = await admin.auth.admin.deleteUser(u.id); // cascades profiles/memberships
         console.log(`  ${error ? '✗ failed to delete' : '✓ deleted'} test user ${u.email}${error ? ' — ' + error.message : ''}`);
       }
     }

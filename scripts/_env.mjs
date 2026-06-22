@@ -1,24 +1,23 @@
-// scripts/_env.mjs — shared env loader + hard data-isolation guardrail (Build Plan §3, DECISIONS D-007/D-014).
+// scripts/_env.mjs — shared env loader + project guardrail (DECISIONS D-007/D-014, REVISED for one project).
 //
-// TWO-VALUE ALLOWLIST (D-014 prod separation):
-//   • DEMO target (default): reads .env.local, accepts ONLY the demo ref rsaztdwxrzgyxkvxrqrt.
-//   • PROD target (explicit `--prod` flag): reads a SEPARATE gitignored .env.production.local, accepts ONLY
-//     a ref that is NOT the demo ref. Prod tooling can never run without the explicit flag + the prod file.
-// The two paths are firewalled: the demo path refuses any non-demo ref, and the prod path refuses the demo
-// ref — so "demo tooling can never accidentally hit prod" (and vice-versa) is enforced, not just intended.
-// Standing up the prod project = creating .env.production.local; nothing here ever invents prod creds.
+// SINGLE-PROJECT model: there is ONE Supabase project (ref rsaztdwxrzgyxkvxrqrt) and it is now the
+// PRODUCTION project — real client data lives here ALONGSIDE re-seedable demo orgs (Acme/Globex), with
+// tenant isolation enforced by RLS and proven by `npm run test:rls` (self-cleaning). All tooling loads
+// .env.local and refuses any other project, so a stray credential can never point a script at the wrong
+// database. (No second prod project — financial constraint; the earlier --prod / .env.production.local /
+// allowlist machinery was removed. Isolation is now guaranteed by RLS, not by project separation.)
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
-export const DEMO_REF = 'rsaztdwxrzgyxkvxrqrt';
-// Back-compat: existing demo-only scripts (seed-user, db-migrate, gen-types, …) import REF as "the demo ref".
-export const REF = DEMO_REF;
-export const DEV_DEMO_REF = DEMO_REF;
+export const PROJECT_REF = 'rsaztdwxrzgyxkvxrqrt';
+// Back-compat aliases (older scripts import these names): all refer to the one project.
+export const REF = PROJECT_REF;
+export const DEV_DEMO_REF = PROJECT_REF;
+export const DEMO_REF = PROJECT_REF;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-export const ENV_PATH = resolve(__dirname, '..', '.env.local'); // demo env file (back-compat; used by zoho scripts)
-const PROD_ENV_PATH = resolve(__dirname, '..', '.env.production.local'); // prod env file — gitignored, operator-created
+export const ENV_PATH = resolve(__dirname, '..', '.env.local');
 
 export function parseEnv(text) {
   const out = {};
@@ -37,57 +36,27 @@ export function parseEnv(text) {
   return out;
 }
 
-// Resolve which database a run targets: explicit opt > `--prod` flag > demo default.
-export function resolveTarget(opts = {}) {
-  if (opts.target) return opts.target;
-  return process.argv.includes('--prod') ? 'prod' : 'demo';
-}
+/** Load + validate .env.local for the one project. Refuses any DATABASE_URL / ref that isn't this project. */
+export function loadEnv() {
+  let env;
+  try { env = parseEnv(readFileSync(ENV_PATH, 'utf8')); }
+  catch { throw new Error('BLOCKED — .env.local not found at ' + ENV_PATH); }
 
-function validateConnection(env, expectedRef, label) {
+  const declared = env.SUPABASE_PROJECT_REF || PROJECT_REF;
+  if (declared !== PROJECT_REF) throw new Error('BLOCKED — SUPABASE_PROJECT_REF (' + declared + ') != ' + PROJECT_REF + '. Refusing.');
+  env.SUPABASE_PROJECT_REF = PROJECT_REF; // normalize so callers can always read the resolved ref
+
   const url = env.DATABASE_URL || '';
-  if (!url || /REPLACE_/.test(url)) {
-    throw new Error(`BLOCKED — ${label} DATABASE_URL missing or still a placeholder.`);
-  }
+  if (!url || /REPLACE_/.test(url)) throw new Error('BLOCKED — DATABASE_URL missing or still a placeholder.');
   let u;
-  try { u = new URL(url); } catch { throw new Error(`BLOCKED — ${label} DATABASE_URL is not a valid URL.`); }
-  if (!u.hostname.includes(expectedRef)) {
-    throw new Error(`BLOCKED — ${label} DATABASE_URL host (${u.hostname}) is not for project ${expectedRef}. Refusing.`);
+  try { u = new URL(url); } catch { throw new Error('BLOCKED — DATABASE_URL is not a valid URL.'); }
+  if (!u.hostname.includes(PROJECT_REF)) {
+    throw new Error(`BLOCKED — DATABASE_URL host (${u.hostname}) is not for project ${PROJECT_REF}. Refusing.`);
   }
   const port = u.port || '5432';
   if (port === '6543') throw new Error('BLOCKED — port 6543 is the transaction pooler; use direct 5432 (rule 7).');
   if (port !== '5432') throw new Error('BLOCKED — port ' + port + ' unexpected; use direct 5432.');
-}
 
-function loadDemo() {
-  let env;
-  try { env = parseEnv(readFileSync(ENV_PATH, 'utf8')); }
-  catch { throw new Error('BLOCKED — .env.local not found at ' + ENV_PATH); }
-  const declared = env.SUPABASE_PROJECT_REF || DEMO_REF;
-  if (declared !== DEMO_REF) {
-    throw new Error('BLOCKED — SUPABASE_PROJECT_REF (' + declared + ') != demo ref ' + DEMO_REF + ' in .env.local. Refusing (demo path).');
-  }
-  env.SUPABASE_PROJECT_REF = DEMO_REF; // normalize so callers can always read the resolved ref
-  validateConnection(env, DEMO_REF, 'DEV/DEMO');
-  console.warn(`⚠️  DEV/DEMO DATABASE (capeasy-vcfo · ${DEMO_REF}) — fake demo data only. NEVER load real client trial balances here (DECISIONS.md D-007).`);
+  console.warn(`⚠️  PRODUCTION PROJECT (capeasy-vcfo · ${PROJECT_REF}) — the LIVE project. Real client data lives here alongside re-seedable demo orgs; tenant isolation is enforced by RLS. Handle with care.`);
   return env;
-}
-
-function loadProd() {
-  let env;
-  try { env = parseEnv(readFileSync(PROD_ENV_PATH, 'utf8')); }
-  catch { throw new Error('BLOCKED — .env.production.local not found at ' + PROD_ENV_PATH + ' (create it after standing up the prod Supabase project — STOP/AYUSH gate B2).'); }
-  const ref = env.SUPABASE_PROJECT_REF || '';
-  if (!ref || /REPLACE_/.test(ref)) throw new Error('BLOCKED — SUPABASE_PROJECT_REF missing/placeholder in .env.production.local.');
-  if (ref === DEMO_REF) {
-    throw new Error('BLOCKED — .env.production.local points at the DEMO ref ' + DEMO_REF + '. Prod tooling must NEVER target demo. Refusing.');
-  }
-  validateConnection(env, ref, 'PRODUCTION');
-  console.warn(`⚠️  PRODUCTION DATABASE (capeasy-vcfo · ${ref}) — REAL client data. Migrations only; NEVER run db:seed here (D-014).`);
-  return env;
-}
-
-/** Load + validate env for the resolved target. Default (no flag) = demo, preserving prior behaviour.
- *  Pass { target: 'prod' } or run with `--prod` to load the separate prod env file. */
-export function loadEnv(opts = {}) {
-  return resolveTarget(opts) === 'prod' ? loadProd() : loadDemo();
 }
