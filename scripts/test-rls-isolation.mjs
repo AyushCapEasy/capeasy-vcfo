@@ -2,10 +2,15 @@
 // LIVE authenticated sessions (not a schema assertion). This is the HARD GATE: exit 0 ⇔ every client-data
 // table isolates org A from org B, bidirectionally, through the real app data path (ANON key + RLS).
 //
-// Setup (service_role / direct DB — bypasses RLS): a second client org "Globex" (B), two analyst users
-// each scoped to exactly ONE client (analyst.a → Acme A, analyst.b → Globex B), and at least one row in
-// EVERY client-data table for BOTH orgs (the seed doesn't populate schedule_capex / tb_upload_staging, so
-// we add them) plus an org-scoped audit row and a system login row (org_id NULL, detail.email) per analyst.
+// SELF-CLEANING (single-project / prod-safe): this gate creates its OWN ephemeral probe orgs + analyst
+// users + data (it does NOT depend on the demo seed and never touches Acme/real orgs), runs the checks,
+// then TEARS DOWN everything it created in a finally block — pass OR fail — and verifies the org/user
+// counts return to the pre-run baseline. So it can be run against the live production project anytime and
+// leaves it exactly as clean as it found it (zero residual rows).
+//
+// Setup (service_role / direct DB — bypasses RLS): two ephemeral orgs A + B, two ephemeral analyst users
+// each scoped to exactly ONE org, and at least one row in EVERY client-data table for BOTH orgs, plus an
+// org-scoped audit row and a system login row (org_id NULL, detail.email) per analyst.
 //
 // Test (ANON key + real sign-in = the app data path): for every table, each analyst
 //   • reads OWN-org rows            → must be > 0   (positive control: the probe CAN see data when allowed)
@@ -16,7 +21,7 @@
 // Plus the two regression catches: profiles returns ONLY self (GAP-1); audit_log exposes NO other
 // tenant's rows and NO other user's email, incl. system login rows (GAP-2).
 //
-// Passwords are random per run and never printed. Idempotent. Run: npm run test:rls
+// Passwords + emails + org names are random per run and never printed. Run: npm run test:rls
 import { randomBytes } from 'node:crypto';
 import { loadEnv } from './_env.mjs';
 
@@ -180,62 +185,106 @@ async function probeAll(label, email, password, own, other) {
   await c.auth.signOut();
 }
 
+// --- Self-cleaning harness: create EPHEMERAL probe orgs/users, run the checks, then sweep them away. ----
+// audit_log is hard append-only (a trigger blocks UPDATE/DELETE for ALL roles), and an org can't be deleted
+// while audit rows reference it (ON DELETE SET NULL fires the blocked UPDATE). So administrative teardown
+// briefly disables that guard (owner-only), removes the probe artifacts by name pattern, then re-enables it.
+// The sweep is pattern-based (not just this run's ids), so a prior crashed run also leaves no residue.
+const RUN = tag();
+const ORG_PREFIX = 'RLS-PROBE-';   // ephemeral org legal_name prefix
+const USER_PREFIX = 'rls-probe-';  // ephemeral analyst email prefix
+const orgCount = async () => Number((await db.query(`select count(*)::int n from public.orgs`)).rows[0].n);
+const userCount = async () => ((await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })).data?.users ?? []).length;
+
+// Run fn with the audit_log append-only guard temporarily disabled (owner-only), ALWAYS restoring it.
+async function withAuditMutable(fn) {
+  await db.query(`alter table public.audit_log disable trigger audit_log_no_update`);
+  await db.query(`alter table public.audit_log disable trigger audit_log_no_delete`);
+  try { return await fn(); }
+  finally {
+    await db.query(`alter table public.audit_log enable trigger audit_log_no_update`);
+    await db.query(`alter table public.audit_log enable trigger audit_log_no_delete`);
+  }
+}
+
+// Remove ALL probe artifacts (this run + any prior crashed run); returns counts swept.
+async function sweepProbes() {
+  const orgIds = (await db.query(`select id from public.orgs where legal_name ~* 'rls.?probe'`)).rows.map((r) => r.id);
+  const probeUsers = ((await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })).data?.users ?? []).filter((u) => (u.email || '').startsWith(USER_PREFIX));
+  await withAuditMutable(async () => {
+    for (const oid of orgIds) {
+      await db.query(`delete from public.audit_log where org_id=$1`, [oid]);
+      await db.query(`delete from public.orgs where id=$1`, [oid]); // cascades periods/TB/schedules/staging/mappings/org_members
+    }
+    if (probeUsers.length) await db.query(`delete from public.audit_log where actor_id = any($1)`, [probeUsers.map((u) => u.id)]);
+  });
+  for (const u of probeUsers) await admin.auth.admin.deleteUser(u.id); // cascades profiles
+  return { orgs: orgIds.length, users: probeUsers.length };
+}
+
+async function makeAnalyst(slug) {
+  const email = `${USER_PREFIX}${slug}-${RUN}@capeasy.in`; // unique per run; swept in teardown
+  const u = await ensureUser(email);
+  u.email = email;
+  return u;
+}
+
+async function makeOrgWithData(name, analyst, specs) {
+  const org = (await db.query(
+    `insert into public.orgs (legal_name, entity_type, state, gst_scheme, has_employees)
+     values ($1,'pvt_ltd','Maharashtra','monthly',true) returning id`, [name]
+  )).rows[0].id;
+  await db.query(`insert into public.org_members (org_id, user_id, role) values ($1,$2,'analyst')`, [org, analyst.id]);
+  const periodId = (await db.query(
+    `insert into public.periods (org_id, tax_year, period_month, label, status) values ($1,'TY2099-00','2099-01-01','probe','draft') returning id`, [org]
+  )).rows[0].id;
+  await db.query(
+    `insert into public.trial_balance_lines (period_id, org_id, source_account_code, source_account_name, debit_amount, credit_amount) values
+     ($1,$2,'1000','Cash',10000000,0), ($1,$2,'3000','Share Capital',0,10000000)`, [periodId, org]
+  );
+  await ensureOrgData(org, periodId, specs, analyst);
+  return { id: org, periodId };
+}
+
+// Clear any leftover probe artifacts from a prior crashed run, THEN snapshot the true baseline.
+const swept0 = await sweepProbes();
+if (swept0.orgs || swept0.users) console.log(`(pre-clean: swept ${swept0.orgs} stale probe org(s) + ${swept0.users} stale probe user(s) from a prior run)`);
+const baseOrgs = await orgCount();
+const baseUsers = await userCount();
+
 try {
-  // --- Setup (service_role / owner) ----------------------------------------
-  const acme = (await db.query(`select id from public.orgs where legal_name=$1`, ['Acme Foods Pvt Ltd'])).rows[0];
-  if (!acme) throw new Error('Acme demo org missing — run `npm run db:seed` first.');
-  const A = acme.id;
-
-  let globex = (await db.query(`select id from public.orgs where legal_name=$1`, ['Globex Trading Pvt Ltd'])).rows[0];
-  if (!globex) {
-    globex = (await db.query(
-      `insert into public.orgs (legal_name, entity_type, state, gst_scheme, has_employees)
-       values ('Globex Trading Pvt Ltd','pvt_ltd','Karnataka','monthly',true) returning id`
-    )).rows[0];
-  }
-  const B = globex.id;
-
-  // Globex needs a period + a tiny balanced TB so there is "B data" to (fail to) read.
-  let bPeriod = (await db.query(`select id from public.periods where org_id=$1 order by period_month limit 1`, [B])).rows[0];
-  if (!bPeriod) {
-    bPeriod = (await db.query(
-      `insert into public.periods (org_id, tax_year, period_month, label, status) values ($1,'TY2026-27','2026-04-01','Apr 2026','draft') returning id`,
-      [B]
-    )).rows[0];
-    await db.query(
-      `insert into public.trial_balance_lines (period_id, org_id, source_account_code, source_account_name, debit_amount, credit_amount) values
-       ($1,$2,'1000','Cash',10000000,0), ($1,$2,'3000','Share Capital',0,10000000)`,
-      [bPeriod.id, B]
-    );
-  }
-  const aPeriod = (await db.query(`select id from public.periods where org_id=$1 order by period_month limit 1`, [A])).rows[0];
-
-  // Two analysts, each a member of exactly one client.
-  const analystA = await ensureUser('analyst.a@capeasy.in'); analystA.email = 'analyst.a@capeasy.in';
-  const analystB = await ensureUser('analyst.b@capeasy.in'); analystB.email = 'analyst.b@capeasy.in';
-  await db.query(`delete from public.org_members where user_id = any($1)`, [[analystA.id, analystB.id]]);
-  await db.query(`insert into public.org_members (org_id, user_id, role) values ($1,$2,'analyst')`, [A, analystA.id]);
-  await db.query(`insert into public.org_members (org_id, user_id, role) values ($1,$2,'analyst')`, [B, analystB.id]);
-
-  // Ensure every client-data table has data for BOTH orgs (capex/staging/audit the seed lacks).
+  // --- Setup: two EPHEMERAL orgs + analysts + a full data set in every client-data table -----
   const catId = (await db.query(`select id from public.account_categories limit 1`)).rows[0].id;
   const specs = orgTableSpecs(catId);
-  await ensureOrgData(A, aPeriod.id, specs, analystA);
-  await ensureOrgData(B, bPeriod.id, specs, analystB);
+  const analystA = await makeAnalyst('a');
+  const analystB = await makeAnalyst('b');
+  const a = await makeOrgWithData(`${ORG_PREFIX}A-${RUN}`, analystA, specs);
+  const b = await makeOrgWithData(`${ORG_PREFIX}B-${RUN}`, analystB, specs);
 
-  const idsA = await collectIds(A, specs);
-  const idsB = await collectIds(B, specs);
-
-  const orgA = { name: 'Acme (A)', id: A, periodId: aPeriod.id, userId: analystA.id, email: analystA.email, ids: idsA, specs };
-  const orgB = { name: 'Globex (B)', id: B, periodId: bPeriod.id, userId: analystB.id, email: analystB.email, ids: idsB, specs };
+  const orgA = { name: 'Probe A', id: a.id, periodId: a.periodId, userId: analystA.id, email: analystA.email, ids: await collectIds(a.id, specs), specs };
+  const orgB = { name: 'Probe B', id: b.id, periodId: b.periodId, userId: analystB.id, email: analystB.email, ids: await collectIds(b.id, specs), specs };
 
   // --- Test (live sessions, ANON key, RLS-enforced), bidirectional ---------
-  console.log('Cross-tenant isolation — live authenticated sessions (ANON key, RLS) across ALL client-data tables');
-  await probeAll('analyst.a (scoped to A)', analystA.email, analystA.password, orgA, orgB);
-  await probeAll('analyst.b (scoped to B)', analystB.email, analystB.password, orgB, orgA);
+  console.log(`Cross-tenant isolation — live authenticated sessions (ANON key, RLS) across ALL client-data tables  [project ${ref}, run ${RUN}]`);
+  await probeAll('analyst A', analystA.email, analystA.password, orgA, orgB);
+  await probeAll('analyst B', analystB.email, analystB.password, orgB, orgA);
 
   console.log(`\nRESULT: ${failures === 0 ? 'PASS ✓ — tenant isolation holds across every table, bidirectionally' : `FAIL ✗ — ${failures} isolation check(s) leaked`}`);
   process.exitCode = failures === 0 ? 0 : 1;
 } finally {
-  await db.end();
+  // --- Teardown: sweep every probe artifact (pass OR fail), then prove the baseline is restored. --------
+  try {
+    const swept = await sweepProbes();
+    const endOrgs = await orgCount();
+    const endUsers = await userCount();
+    console.log(`\nTEARDOWN: swept ${swept.orgs} probe org(s) + ${swept.users} probe user(s) + their data/audit rows.`);
+    console.log(`  orgs        ${baseOrgs} → ${endOrgs}   ${endOrgs === baseOrgs ? '✓ baseline restored (zero residue)' : '✗ RESIDUE LEFT'}`);
+    console.log(`  auth users  ${baseUsers} → ${endUsers}   ${endUsers === baseUsers ? '✓ baseline restored (zero residue)' : '✗ RESIDUE LEFT'}`);
+    if (endOrgs !== baseOrgs || endUsers !== baseUsers) process.exitCode = 1;
+  } catch (e) {
+    console.error('TEARDOWN ERROR — manual cleanup may be needed: ' + (e?.message || String(e)));
+    process.exitCode = 1;
+  } finally {
+    await db.end();
+  }
 }
