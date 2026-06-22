@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { signOut } from './actions';
+import { CreateWorkspaceForm } from './onboarding/create-workspace-form';
 
 export default async function Home() {
   const supabase = await createClient();
@@ -79,8 +80,10 @@ export default async function Home() {
             ))}
           </ul>
         ) : (
-          <div className="card mt-5 p-10 text-center text-sm text-muted">
-            No client orgs are visible to your account yet. An administrator provisions access per client.
+          <div className="card mx-auto mt-6 max-w-lg p-6 shadow-sm">
+            <h2 className="text-base font-semibold text-ink">Create your workspace</h2>
+            <p className="mb-4 mt-1 text-[13px] text-muted">Set up your company to start turning your books into a structured MIS pack.</p>
+            <CreateWorkspaceForm />
           </div>
         )}
       </main>

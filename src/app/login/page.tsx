@@ -1,6 +1,8 @@
 // src/app/login/page.tsx — sign-in screen. Already-authenticated users are bounced to the app.
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { isSignupOpen } from '@/lib/auth/signup-gate';
 import { LoginForm } from './login-form';
 
 export default async function LoginPage() {
@@ -9,6 +11,8 @@ export default async function LoginPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (user) redirect('/');
+
+  const signupOpen = isSignupOpen();
 
   return (
     <main className="flex flex-1 items-center justify-center p-6">
@@ -22,7 +26,11 @@ export default async function LoginPage() {
           <LoginForm />
         </div>
         <p className="mt-5 text-center text-xs text-muted">
-          Internal access only. Accounts are provisioned by an administrator.
+          {signupOpen ? (
+            <>New to Saral? <Link href="/signup" className="font-medium text-primary hover:underline">Create an account</Link></>
+          ) : (
+            'Saral is in private testing — access is invite-only for now.'
+          )}
         </p>
       </div>
     </main>

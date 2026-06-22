@@ -37,10 +37,14 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Auth gate: unauthenticated requests go to /login (which is itself allowed through).
-  // Admin-provisioned model — there is no public signup route to whitelist (Build Plan §6 P0).
+  // Auth gate: unauthenticated requests go to /login. Public auth routes reachable WITHOUT a session:
+  // sign-in, sign-up (itself gated CLOSED in-app until C3 — see signup-gate.ts), and the email-confirmation
+  // callback (/auth/callback). Everything else requires a session.
   const path = request.nextUrl.pathname;
-  const isAuthRoute = path === '/login' || path.startsWith('/login/');
+  const isAuthRoute =
+    path === '/login' || path.startsWith('/login/') ||
+    path === '/signup' || path.startsWith('/signup/') ||
+    path.startsWith('/auth/');
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
