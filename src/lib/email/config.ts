@@ -34,7 +34,9 @@ export function formatSender(name: string, address: string): string {
 export function readEmailConfig(env: Record<string, string | undefined> = process.env): EmailConfig {
   const provider: EmailProviderKind = clean(env.EMAIL_PROVIDER) === 'resend' ? 'resend' : 'mock';
   const fromAddress = clean(env.EMAIL_FROM) || DEFAULT_FROM_ADDRESS;
-  const resendToken = clean(env.RESEND_API_TOKEN) || null;
+  // The shared CapEasy Resend token lives in RESEND_API_KEY (canonical, per .env.local). RESEND_API_TOKEN
+  // is accepted as a back-compat fallback so either name works.
+  const resendToken = clean(env.RESEND_API_KEY) || clean(env.RESEND_API_TOKEN) || null;
   return {
     provider,
     fromAddress,

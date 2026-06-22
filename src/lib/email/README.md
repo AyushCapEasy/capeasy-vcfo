@@ -9,7 +9,7 @@ service** (one service, four products). Email only — WhatsApp/DoubleTick is **
 | File | Role |
 |---|---|
 | `types.ts` | `EmailProvider` interface + `EmailMessage` / `SendResult`. The seam every caller depends on. |
-| `config.ts` | Env-driven config (`EMAIL_PROVIDER`, `EMAIL_FROM`, `RESEND_API_TOKEN`) + Saral identity (`SARAL_SENDER_NAME`, `formatSender`). No secrets in source. |
+| `config.ts` | Env-driven config (`EMAIL_PROVIDER`, `EMAIL_FROM`, `RESEND_API_KEY` — `RESEND_API_TOKEN` fallback) + Saral identity (`SARAL_SENDER_NAME`, `formatSender`). No secrets in source. |
 | `resend.ts` | `ResendProvider` — send-only, native `fetch` (no SDK), `POST https://api.resend.com/emails`. |
 | `mock.ts` | `MockProvider` — records sends in-memory, never hits the network. The **test default**. |
 | `templates.ts` | Saral-branded auth templates (verification, password reset). **Canonical source** of the Saral copy/branding. |
@@ -24,7 +24,7 @@ bodies all self-identify as Saral, so recipients always know which product maile
 
 ## Provider selection (safe by default)
 
-`EMAIL_PROVIDER=resend` → `ResendProvider` (requires `RESEND_API_TOKEN`, else it fails loud).
+`EMAIL_PROVIDER=resend` → `ResendProvider` (requires `RESEND_API_KEY`, else it fails loud).
 **Anything else — including unset or `mock` — resolves to `MockProvider`.** No environment can perform an
 accidental live send; tests always run on mock.
 
@@ -65,7 +65,7 @@ generate links via `generateLink`, and send through `ResendProvider`. Not adopte
   - Host: `smtp.resend.com`
   - Port: `465` (implicit TLS; Resend also supports `587` STARTTLS, `2465`, `2587`)
   - Username: `resend`
-  - Password: the value of `RESEND_API_TOKEN` (Resend uses the API key as the SMTP password)
+  - Password: the value of `RESEND_API_KEY` (Resend uses the API key as the SMTP password)
 - **Authentication → Email Templates →** "Confirm signup" + "Reset password": paste the Saral HTML from
   `templates.ts`, keeping Supabase's action-link variables.
 - **Authentication → URL Configuration →** Site URL = prod domain; add the confirm/reset redirect URLs.

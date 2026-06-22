@@ -23,8 +23,15 @@ test('config: provider defaults to mock unless EMAIL_PROVIDER=resend (no acciden
   assert.equal(readEmailConfig({}).provider, 'mock');
   assert.equal(readEmailConfig({ EMAIL_PROVIDER: 'mock' }).provider, 'mock');
   assert.equal(readEmailConfig({ EMAIL_PROVIDER: 'anything-else' }).provider, 'mock');
-  assert.equal(readEmailConfig({ EMAIL_PROVIDER: 'resend', RESEND_API_TOKEN: 'tok' }).provider, 'resend');
+  assert.equal(readEmailConfig({ EMAIL_PROVIDER: 'resend', RESEND_API_KEY: 'tok' }).provider, 'resend');
   assert.equal(getEmailProvider(readEmailConfig({})).name, 'mock');
+});
+
+test('config: the Resend token is read from RESEND_API_KEY (canonical), with RESEND_API_TOKEN as fallback', () => {
+  assert.equal(readEmailConfig({ RESEND_API_KEY: 'fromKey' }).resendToken, 'fromKey');
+  assert.equal(readEmailConfig({ RESEND_API_TOKEN: 'fromToken' }).resendToken, 'fromToken'); // fallback
+  assert.equal(readEmailConfig({ RESEND_API_KEY: 'fromKey', RESEND_API_TOKEN: 'fromToken' }).resendToken, 'fromKey'); // KEY wins
+  assert.equal(readEmailConfig({}).resendToken, null);
 });
 
 test('config: shared from-address, per-product Saral framing', () => {
@@ -35,7 +42,7 @@ test('config: shared from-address, per-product Saral framing', () => {
 });
 
 test('selecting resend with a real token yields the ResendProvider (construction only — no send)', () => {
-  const p = getEmailProvider(readEmailConfig({ EMAIL_PROVIDER: 'resend', RESEND_API_TOKEN: 'tok' }));
+  const p = getEmailProvider(readEmailConfig({ EMAIL_PROVIDER: 'resend', RESEND_API_KEY: 'tok' }));
   assert.ok(p instanceof ResendProvider);
   assert.equal(p.name, 'resend');
 });
