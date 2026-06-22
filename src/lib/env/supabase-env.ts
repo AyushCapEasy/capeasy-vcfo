@@ -1,16 +1,14 @@
-// src/lib/env/supabase-env.ts — D-014 build-time invariant: a deployment must point at the Supabase
-// project that matches its environment. PRODUCTION must NOT use the demo project; PREVIEW/DEVELOPMENT
-// MUST use the demo project. This converts D-014 separation from operator discipline (set the right
-// Vercel env var) into an enforced invariant (a misconfigured deploy fails the build instead of silently
-// crossing real and demo data). Pure + dependency-free so next.config can call it at build time and the
-// test can exercise it directly.
+// src/lib/env/supabase-env.ts — single-project env invariant (D-014 REVISED: one Supabase project serves
+// both demo and production; tenant isolation is enforced by RLS — proven by the launch gate test:rls — NOT
+// by a second project). This build-time check asserts the app is wired to the EXPECTED project and that the
+// Supabase URL is present + well-formed, so a misconfigured or empty NEXT_PUBLIC_SUPABASE_URL fails the
+// build instead of silently shipping a broken/wrong-project deploy. It does NOT distinguish prod vs preview
+// (there is only one project), so it never blocks the single-project setup.
 //
-// DEMO_REF is duplicated from scripts/_env.mjs on purpose: that file is .mjs (excluded from tsc) and app
-// code can't import it. It is a public project ref, not a secret (it's also in .env.example).
+// EXPECTED_SUPABASE_REF is the single shared project ref (also in scripts/_env.mjs and .env.example). It is
+// a public project identifier, not a secret. To re-point the whole app at a different project, change it here.
 
-export const DEMO_REF = 'rsaztdwxrzgyxkvxrqrt';
-
-export type EnvKind = 'production' | 'preview' | 'development';
+export const EXPECTED_SUPABASE_REF = 'rsaztdwxrzgyxkvxrqrt';
 
 /** Parse the project ref from a Supabase URL (https://<ref>.supabase.co). null if absent/malformed. */
 export function parseSupabaseRef(url: string | undefined | null): string | null {
@@ -19,46 +17,20 @@ export function parseSupabaseRef(url: string | undefined | null): string | null 
   return m ? m[1] : null;
 }
 
-/** Map the runtime environment to a kind. Vercel sets VERCEL_ENV; locally it is unset → development. */
-export function resolveEnvKind(env: Record<string, string | undefined> = process.env): EnvKind {
-  const v = (env.VERCEL_ENV || '').toLowerCase();
-  if (v === 'production') return 'production';
-  if (v === 'preview') return 'preview';
-  return 'development';
-}
+export type AssertInput = { supabaseUrl: string | undefined | null; expectedRef?: string };
 
-export type AssertInput = {
-  kind: EnvKind;
-  supabaseUrl: string | undefined | null;
-  demoRef?: string;
-  /** Optional exact-pin for prod (set NEXT_PUBLIC_EXPECTED_PROD_REF once the prod ref is known). */
-  expectedProdRef?: string | null;
-};
-
-/** Throws if the configured Supabase ref is wrong for the environment. */
-export function assertSupabaseEnv({ kind, supabaseUrl, demoRef = DEMO_REF, expectedProdRef = null }: AssertInput): void {
+/** Throws unless NEXT_PUBLIC_SUPABASE_URL is present, well-formed, and points at the expected project. */
+export function assertSupabaseEnv({ supabaseUrl, expectedRef = EXPECTED_SUPABASE_REF }: AssertInput): void {
   const ref = parseSupabaseRef(supabaseUrl);
   if (!ref) {
-    throw new Error(`[D-014 env invariant] NEXT_PUBLIC_SUPABASE_URL is missing or not a https://<ref>.supabase.co URL (env=${kind}).`);
+    throw new Error('[env invariant] NEXT_PUBLIC_SUPABASE_URL is missing or not a https://<ref>.supabase.co URL — refusing the build.');
   }
-  if (kind === 'production') {
-    if (ref === demoRef) {
-      throw new Error(`[D-014 env invariant] PRODUCTION is pointed at the DEMO project (${demoRef}). Prod must use the separate prod project — refusing the build.`);
-    }
-    if (expectedProdRef && ref !== expectedProdRef) {
-      throw new Error(`[D-014 env invariant] PRODUCTION ref "${ref}" != expected prod ref "${expectedProdRef}" — refusing the build.`);
-    }
-  } else if (ref !== demoRef) {
-    // preview + development must be the demo project — never real client data on a preview/local build.
-    throw new Error(`[D-014 env invariant] ${kind.toUpperCase()} is pointed at "${ref}", not the demo project (${demoRef}). Previews/dev must use demo — refusing the build.`);
+  if (ref !== expectedRef) {
+    throw new Error(`[env invariant] Supabase URL points at project "${ref}", but this app is wired to "${expectedRef}" — refusing the build.`);
   }
 }
 
 /** Convenience wrapper reading process.env — called by next.config at build time. */
 export function assertSupabaseEnvFromProcess(env: Record<string, string | undefined> = process.env): void {
-  assertSupabaseEnv({
-    kind: resolveEnvKind(env),
-    supabaseUrl: env.NEXT_PUBLIC_SUPABASE_URL,
-    expectedProdRef: env.NEXT_PUBLIC_EXPECTED_PROD_REF || null,
-  });
+  assertSupabaseEnv({ supabaseUrl: env.NEXT_PUBLIC_SUPABASE_URL });
 }
