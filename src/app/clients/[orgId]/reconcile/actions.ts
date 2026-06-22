@@ -2,11 +2,10 @@
 // src/app/clients/[orgId]/reconcile/actions.ts — run the bank/GST reconciliation overlay against the
 // client's books. Files are parsed IN-MEMORY only (D-014, nothing persisted) and the books come from the
 // RLS-scoped engine results — the books are the source of truth, the uploads are the cross-check.
-import * as XLSX from 'xlsx';
-import Papa from 'papaparse';
 import { createClient } from '@/lib/supabase/server';
 import { getMisChain } from '@/lib/engine/mis-data';
 import { parseBankRows, parseGstRows, buildOverlay, type Books, type OverlayResult } from '@/lib/overlay/overlay';
+import { rowsFromUpload } from '@/lib/overlay/upload';
 
 export type ReconState = {
   ran: boolean;
@@ -16,19 +15,7 @@ export type ReconState = {
   error: string | null;
 };
 
-/** Extract a messy CSV/XLSX upload into string rows. Defensive: returns [] on an unreadable file. */
-async function fileToRows(file: File): Promise<string[][]> {
-  const name = file.name.toLowerCase();
-  const buf = Buffer.from(await file.arrayBuffer());
-  if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
-    const wb = XLSX.read(buf, { type: 'buffer' });
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, blankrows: false, defval: '' });
-    return rows.map((r) => r.map((c) => String(c ?? '')));
-  }
-  const parsed = Papa.parse<string[]>(buf.toString('utf8'), { skipEmptyLines: true });
-  return parsed.data.map((r) => r.map((c) => String(c ?? '')));
-}
+const fileRows = async (file: File): Promise<string[][]> => rowsFromUpload(Buffer.from(await file.arrayBuffer()), file.name);
 
 export async function runReconcile(orgId: string, _prev: ReconState, formData: FormData): Promise<ReconState> {
   const supabase = await createClient();
@@ -52,11 +39,11 @@ export async function runReconcile(orgId: string, _prev: ReconState, formData: F
 
   let bank = null, gst = null;
   if (hasBank) {
-    try { bank = parseBankRows(await fileToRows(bankFile!)); }
+    try { bank = parseBankRows(await fileRows(bankFile!)); }
     catch { bank = { ok: false, lines: [], totalRows: 0, unreadRows: 0, parseFlags: ['Could not open the bank file (unsupported format?) — re-export as CSV/XLSX.'] }; }
   }
   if (hasGst) {
-    try { gst = parseGstRows(await fileToRows(gstFile!)); }
+    try { gst = parseGstRows(await fileRows(gstFile!)); }
     catch { gst = { ok: false, kind: 'unknown' as const, filedValuePaise: null, totalRows: 0, unreadRows: 0, parseFlags: ['Could not open the GST file (unsupported format?) — re-export as CSV/XLSX.'] }; }
   }
 
