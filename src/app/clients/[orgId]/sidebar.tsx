@@ -8,6 +8,7 @@ const I = {
   overview: <><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.7" /><rect x="13.5" y="3.5" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.7" /><rect x="3.5" y="13.5" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.7" /><rect x="13.5" y="13.5" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.7" /></>,
   mis: <><path d="M6 3.5h8l4 4V20.5H6z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><path d="M14 3.5v4h4M9 13h6M9 16.5h6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></>,
   insights: <><path d="M12 3.5a6 6 0 00-3.5 10.9c.6.45.9 1 .9 1.7v.4h5.2v-.4c0-.7.3-1.25.9-1.7A6 6 0 0012 3.5z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><path d="M9.6 20.5h4.8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></>,
+  forecast: <><path d="M3.5 20.5V3.5M3.5 20.5h17" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /><path d="M7 15l3.5-4 3 2.5L20 6.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /><path d="M16.5 6.5H20v3.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></>,
   data: <path d="M9 15l6-6M8 13l-2 2a3.5 3.5 0 005 5l2-2M16 11l2-2a3.5 3.5 0 00-5-5l-2 2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />,
 };
 const NavIcon = ({ d }: { d: React.ReactNode }) => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" className="shrink-0">{d}</svg>;
@@ -51,6 +52,7 @@ export function Sidebar({ orgId, orgName, entityType }: { orgId: string; orgName
       <nav className="flex flex-col gap-[3px] px-3.5 py-1.5">
         <Link href={base} className={live(pathname === base)}><NavIcon d={I.overview} /><span>Overview</span></Link>
         <Link href={`${base}/mis`} className={live(onMis)}><NavIcon d={I.mis} /><span>MIS Pack</span></Link>
+        <Link href={`${base}/forecast`} className={live(pathname.startsWith(`${base}/forecast`))}><NavIcon d={I.forecast} /><span>Forecast</span></Link>
         <Link href={`${base}/insights`} className={live(pathname.startsWith(`${base}/insights`))}><NavIcon d={I.insights} /><span>Insights</span></Link>
         <Link href={`${base}/data-sources`} className={live(pathname.startsWith(`${base}/data-sources`))}><NavIcon d={I.data} /><span>Data Sources</span></Link>
       </nav>
