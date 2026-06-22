@@ -11,6 +11,7 @@ const I = {
   forecast: <><path d="M3.5 20.5V3.5M3.5 20.5h17" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /><path d="M7 15l3.5-4 3 2.5L20 6.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /><path d="M16.5 6.5H20v3.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></>,
   strategy: <><circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.7" /><circle cx="12" cy="12" r="3.5" stroke="currentColor" strokeWidth="1.7" /><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></>,
   data: <path d="M9 15l6-6M8 13l-2 2a3.5 3.5 0 005 5l2-2M16 11l2-2a3.5 3.5 0 00-5-5l-2 2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />,
+  reconcile: <><path d="M4 7h11M4 7l3-3M4 7l3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /><path d="M20 17H9M20 17l-3-3M20 17l-3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></>,
 };
 const NavIcon = ({ d }: { d: React.ReactNode }) => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" className="shrink-0">{d}</svg>;
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'CL';
@@ -57,6 +58,7 @@ export function Sidebar({ orgId, orgName, entityType }: { orgId: string; orgName
         <Link href={`${base}/strategy`} className={live(pathname.startsWith(`${base}/strategy`))}><NavIcon d={I.strategy} /><span>Strategy</span></Link>
         <Link href={`${base}/insights`} className={live(pathname.startsWith(`${base}/insights`))}><NavIcon d={I.insights} /><span>Insights</span></Link>
         <Link href={`${base}/data-sources`} className={live(pathname.startsWith(`${base}/data-sources`))}><NavIcon d={I.data} /><span>Data Sources</span></Link>
+        <Link href={`${base}/reconcile`} className={live(pathname.startsWith(`${base}/reconcile`))}><NavIcon d={I.reconcile} /><span>Reconcile</span></Link>
       </nav>
 
       {/* Footer — honest unverified status (reinforces the watermark) */}
