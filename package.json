@@ -12,6 +12,7 @@
     "test": "node --import tsx --test \"src/lib/**/*.test.ts\"",
     "test:rls": "node scripts/test-rls-isolation.mjs",
     "test:rls:prod": "node scripts/test-rls-isolation.mjs --prod",
+    "clean:prod:check": "node scripts/clean-prod.mjs",
     "fixture": "tsx scripts/gen-fixture.mts",
     "db:preflight": "node scripts/db-preflight.mjs",
     "db:migrate": "node scripts/db-migrate.mjs",
