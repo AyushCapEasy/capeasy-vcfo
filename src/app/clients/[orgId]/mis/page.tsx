@@ -6,9 +6,8 @@ import Link from 'next/link';
 import { redirect, notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getMisChain, getPeriodDrilldown, type DrilldownLine } from '@/lib/engine/mis-data';
-import {
-  pnlRows, bsAssetRows, bsLiabEquityRows, cfRows, ratioCards, kpis, trendSeries, inr, type StmtRow,
-} from '@/lib/mis/present';
+import { cfRows, ratioCards, kpis, trendSeries, inr, type StmtRow } from '@/lib/mis/present';
+import { plScheduleIII, bsScheduleIII, SCH3_PL_FOOTNOTES, SCH3_BS_FOOTNOTES, type Sch3Row } from '@/lib/mis/schedule3';
 import { Sparkline } from './sparkline';
 import { Commentary } from './commentary';
 
@@ -92,6 +91,72 @@ function StatementBlock({ rows, drilldown }: { rows: StmtRow[]; drilldown: Recor
   );
 }
 
+// Schedule III statutory statement (P&L / BS) — current vs prior-year comparative columns, prescribed
+// order/labels/grouping. Drill-down (current period) preserved on lines that carry source categories.
+const COLS = 'grid-cols-[1fr_8rem_8rem]';
+function Sch3Statement({ rows, drilldown, footnotes, curLabel, priorLabel }: {
+  rows: Sch3Row[]; drilldown: Record<string, DrilldownLine[]>; footnotes: string[]; curLabel: string; priorLabel: string | null;
+}) {
+  const amt = (p: number | null) => (p === null ? '—' : inr(p));
+  return (
+    <div>
+      <div className={`grid ${COLS} items-center gap-3 border-b border-line bg-canvas px-5 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted`}>
+        <span>Particulars</span>
+        <span className="text-right">{curLabel}</span>
+        <span className="text-right">{priorLabel ?? 'Prior year'}</span>
+      </div>
+      <div className="divide-y divide-line">
+        {rows.map((row, i) => {
+          const accounts = (row.codes ?? []).flatMap((c) => drilldown[c] ?? []);
+          const rowCls = row.kind === 'total' ? 'bg-primary-50' : row.kind === 'subtotal' ? 'bg-canvas' : '';
+          const numCls = row.kind === 'total' ? 'font-bold text-primary' : row.kind === 'subtotal' ? 'font-semibold text-ink' : 'text-ink';
+          const label = (
+            <span className={`flex items-baseline gap-1.5 ${row.indent ? 'pl-4' : ''}`}>
+              {row.no ? <span className="w-5 shrink-0 text-[10px] font-semibold text-muted">{row.no}</span> : null}
+              <span className={row.kind === 'header' || row.kind === 'subtotal' || row.kind === 'total' ? 'font-semibold text-ink' : 'text-body'}>
+                {row.label}
+                {row.note ? <span className="ml-1 text-[11px] font-normal text-muted">· {row.note}</span> : null}
+              </span>
+            </span>
+          );
+          if (row.kind === 'header') return <div key={i} className="px-5 py-2 text-sm">{label}</div>;
+          const nums = (
+            <>
+              <span className={`num ${numCls}`}>{amt(row.curPaise)}</span>
+              <span className={`num ${row.kind === 'line' ? 'text-muted' : numCls}`}>{amt(row.priorPaise)}</span>
+            </>
+          );
+          if (accounts.length) {
+            return (
+              <details key={i} className="group">
+                <summary className={`grid ${COLS} cursor-pointer list-none items-center gap-3 px-5 py-2 text-sm hover:bg-canvas/70 ${rowCls}`}>
+                  {label}{nums}
+                </summary>
+                <div className="border-t border-line bg-canvas/60 px-5 pt-1.5 pb-2.5 pl-9">
+                  <table className="w-full text-xs text-muted"><tbody>
+                    {accounts.map((a) => (
+                      <tr key={a.code}>
+                        <td className="py-0.5">{a.code} · {a.name}</td>
+                        <td className="num py-0.5 pl-4 text-body">{a.debitPaise ? `${inr(a.debitPaise)} Dr` : `${inr(a.creditPaise)} Cr`}</td>
+                      </tr>
+                    ))}
+                  </tbody></table>
+                </div>
+              </details>
+            );
+          }
+          return <div key={i} className={`grid ${COLS} items-center gap-3 px-5 py-2 text-sm ${rowCls}`}>{label}{nums}</div>;
+        })}
+      </div>
+      {footnotes.length ? (
+        <ol className="list-decimal space-y-1 border-t border-line bg-canvas/40 px-5 py-3 pl-9 text-[11px] text-muted">
+          {footnotes.map((f, i) => <li key={i}>{f}</li>)}
+        </ol>
+      ) : null}
+    </div>
+  );
+}
+
 export default async function MisPage({ params, searchParams }: { params: Promise<{ orgId: string }>; searchParams: Promise<{ p?: string }> }) {
   const { orgId } = await params;
   const { p } = await searchParams;
@@ -122,6 +187,9 @@ export default async function MisPage({ params, searchParams }: { params: Promis
   const kpiCards = kpis(chain.results, selectedIdx);
   const cf = cfRows(result);
   const trends = trendSeries(chain.results);
+  // Prior period for the Schedule III comparative column (null for a first-year company → no comparative).
+  const prior = selectedIdx > 0 ? chain.results[selectedIdx - 1] : null;
+  const priorMeta = selectedIdx > 0 ? chain.periods[selectedIdx - 1] : null;
 
   return (
     <div className="relative min-h-full bg-canvas">
@@ -166,15 +234,13 @@ export default async function MisPage({ params, searchParams }: { params: Promis
           ))}
         </div>
 
-        {/* P&L + Balance Sheet */}
+        {/* Statement of Profit & Loss + Balance Sheet — Companies Act 2013, Schedule III (Division I) */}
         <div className="grid gap-6 lg:grid-cols-2">
-          <Section title="Profit &amp; Loss" subtitle={`${periodMeta.label} · click a line to see mapped accounts`}>
-            <StatementBlock rows={pnlRows(result)} drilldown={drilldown} />
+          <Section title="Statement of Profit and Loss" subtitle="Schedule III, Division I · current vs prior year · click a line for mapped accounts">
+            <Sch3Statement rows={plScheduleIII(result, prior)} drilldown={drilldown} footnotes={SCH3_PL_FOOTNOTES} curLabel={periodMeta.label} priorLabel={priorMeta?.label ?? null} />
           </Section>
-          <Section title="Balance Sheet" subtitle="Summary — assets, liabilities &amp; equity">
-            <StatementBlock rows={bsAssetRows(result)} drilldown={drilldown} />
-            <div className="h-px bg-line" />
-            <StatementBlock rows={bsLiabEquityRows(result)} drilldown={drilldown} />
+          <Section title="Balance Sheet" subtitle="Schedule III, Division I · Equity and Liabilities / Assets · current vs prior year">
+            <Sch3Statement rows={bsScheduleIII(result, prior)} drilldown={drilldown} footnotes={SCH3_BS_FOOTNOTES} curLabel={periodMeta.label} priorLabel={priorMeta?.label ?? null} />
           </Section>
         </div>
 

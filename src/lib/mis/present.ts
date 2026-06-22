@@ -4,13 +4,6 @@
 // view (Bible §8.1). `codes` on a row lists the canonical categories it sums, for drill-down.
 import type { PeriodResult } from '@/lib/engine/types';
 
-// Presentation groupings (which categories sit under each statement line) — drill-down targets.
-const OPEX = ['employee_benefits', 'rent_utilities', 'sales_marketing', 'technology_software', 'professional_fees', 'admin_other_opex'];
-const CURRENT_ASSETS = ['cash_bank', 'trade_receivables', 'inventory', 'prepaid_advances', 'other_current_assets'];
-const NON_CURRENT_ASSETS = ['ppe', 'intangibles', 'investments', 'other_non_current_assets'];
-const CURRENT_LIABILITIES = ['trade_payables', 'short_term_borrowings', 'statutory_dues', 'accrued_other_current_liabilities'];
-const NON_CURRENT_LIABILITIES = ['long_term_borrowings', 'provisions', 'other_non_current_liabilities'];
-
 export type StmtRow = {
   label: string;
   paise: number | null;
@@ -34,47 +27,8 @@ export const fmtRatio = (v: number | null, dp = 2) => (v === null ? '—' : v.to
 export const fmtDays = (v: number | null) => (v === null ? '—' : `${Math.round(v)} days`);
 
 // --- statements -----------------------------------------------------------
-export function pnlRows(r: PeriodResult): StmtRow[] {
-  const pl = r.pnl;
-  return [
-    { label: 'Operating revenue', paise: pl.operatingRevenuePaise, codes: ['operating_revenue'] },
-    { label: 'Cost of goods sold', paise: -pl.cogsPaise, codes: ['cogs'] },
-    { label: 'Gross profit', paise: pl.grossProfitPaise, kind: 'subtotal' },
-    { label: 'Operating expenses', paise: -pl.operatingExpensesPaise, codes: OPEX },
-    { label: 'EBITDA', paise: pl.ebitdaPaise, kind: 'subtotal' },
-    { label: 'Depreciation & amortisation', paise: -pl.depreciationAmortisationPaise, codes: ['depreciation_amortisation'] },
-    { label: 'EBIT', paise: pl.ebitPaise, kind: 'subtotal' },
-    { label: 'Other income', paise: pl.otherIncomePaise, codes: ['other_income'] },
-    { label: 'Finance costs', paise: -pl.financeCostsPaise, codes: ['finance_costs'] },
-    { label: 'Profit before tax', paise: pl.ebtPaise, kind: 'subtotal' },
-    { label: 'Tax expense', paise: -pl.taxPaise, codes: ['tax_expense'] },
-    { label: 'Net profit', paise: pl.netProfitPaise, kind: 'total' },
-  ];
-}
-
-export function bsAssetRows(r: PeriodResult): StmtRow[] {
-  const bs = r.balanceSheet;
-  return [
-    { label: 'Current assets', paise: bs.currentAssetsPaise, codes: CURRENT_ASSETS },
-    { label: 'Non-current assets', paise: bs.nonCurrentAssetsPaise, codes: NON_CURRENT_ASSETS },
-    { label: 'Total assets', paise: bs.totalAssetsPaise, kind: 'total' },
-  ];
-}
-
-export function bsLiabEquityRows(r: PeriodResult): StmtRow[] {
-  const bs = r.balanceSheet;
-  return [
-    { label: 'Current liabilities', paise: bs.currentLiabilitiesPaise, codes: CURRENT_LIABILITIES },
-    { label: 'Non-current liabilities', paise: bs.nonCurrentLiabilitiesPaise, codes: NON_CURRENT_LIABILITIES },
-    { label: 'Total liabilities', paise: bs.totalLiabilitiesPaise, kind: 'subtotal' },
-    { label: 'Share capital', paise: bs.shareCapitalPaise, codes: ['share_capital'] },
-    { label: 'Retained earnings (incl. period profit)', paise: bs.closingRetainedEarningsPaise, codes: ['reserves_surplus'], note: `opening ${inr(bs.openingRetainedEarningsPaise)} + net profit ${inr(bs.netProfitPaise)}` },
-    { label: 'Other equity', paise: bs.otherEquityPaise, codes: ['other_equity'] },
-    { label: 'Total equity', paise: bs.totalEquityPaise, kind: 'subtotal' },
-    { label: 'Total liabilities + equity', paise: bs.totalLiabilitiesPaise + bs.totalEquityPaise, kind: 'total' },
-  ];
-}
-
+// The statutory P&L + Balance Sheet now live in ./schedule3 (Companies Act 2013, Schedule III Div I,
+// with prior-year comparatives). Cash flow + ratios + KPIs below stay in their managerial form.
 export function cfRows(r: PeriodResult): StmtRow[] | null {
   const cf = r.cashFlow;
   if (!cf.available) return null;

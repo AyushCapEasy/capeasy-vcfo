@@ -5,7 +5,8 @@ import type { NextRequest } from 'next/server';
 import * as XLSX from 'xlsx';
 import { createClient } from '@/lib/supabase/server';
 import { getMisChain, getPeriodDrilldown } from '@/lib/engine/mis-data';
-import { pnlRows, bsAssetRows, bsLiabEquityRows, cfRows, ratioCards, type StmtRow } from '@/lib/mis/present';
+import { cfRows, ratioCards, type StmtRow } from '@/lib/mis/present';
+import { plScheduleIII, bsScheduleIII, type Sch3Row } from '@/lib/mis/schedule3';
 import { WATERMARK_TEXT } from '@/lib/watermark';
 
 export const runtime = 'nodejs';
@@ -13,6 +14,15 @@ export const dynamic = 'force-dynamic';
 
 const rupees = (paise: number | null) => (paise === null ? 'n/a' : paise / 100);
 const stmtAoA = (rows: StmtRow[]) => [['Line', 'Amount (₹)'], ...rows.map((r) => [r.label + (r.note ? ` (${r.note})` : ''), rupees(r.paise)])];
+// Schedule III statutory statement → 3 columns (Particulars · current · prior-year comparative).
+const stmt3AoA = (rows: Sch3Row[], curLabel: string, priorLabel: string | null): (string | number)[][] => [
+  ['Particulars', `Current (${curLabel}) ₹`, `Prior (${priorLabel ?? 'n/a — first year'}) ₹`],
+  ...rows.map((r) => [
+    (r.no ? `${r.no}  ` : '') + r.label + (r.note ? ` — ${r.note}` : ''),
+    r.curPaise === null ? '' : r.curPaise / 100,
+    r.priorPaise === null ? '' : r.priorPaise / 100,
+  ]),
+];
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
@@ -27,6 +37,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orgI
   const idx = found >= 0 ? found : chain.periods.length - 1;
   const periodMeta = chain.periods[idx];
   const result = chain.results[idx];
+  const prior = idx > 0 ? chain.results[idx - 1] : null;
+  const priorMeta = idx > 0 ? chain.periods[idx - 1] : null;
   const drilldown = await getPeriodDrilldown(periodMeta.id);
 
   const wb = XLSX.utils.book_new();
@@ -46,8 +58,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orgI
   }
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(tbAoA), 'Trial Balance');
 
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(stmtAoA(pnlRows(result))), 'P&L');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([...stmtAoA(bsAssetRows(result)), [], ...stmtAoA(bsLiabEquityRows(result)).slice(1)]), 'Balance Sheet');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(stmt3AoA(plScheduleIII(result, prior), periodMeta.label, priorMeta?.label ?? null)), 'P&L (Schedule III)');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(stmt3AoA(bsScheduleIII(result, prior), periodMeta.label, priorMeta?.label ?? null)), 'Balance Sheet (Sch III)');
   const cf = cfRows(result);
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(cf ? stmtAoA(cf) : [['Cash Flow'], ['n/a — needs a prior period']]), 'Cash Flow');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Ratio', 'Value'], ...ratioCards(result).map((c) => [c.label, c.value])]), 'Ratios');

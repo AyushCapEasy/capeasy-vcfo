@@ -3,7 +3,8 @@
 // no recomputation. The SAMPLE watermark comes from the single flag (src/lib/watermark.ts) and tiles
 // across every page. puppeteer renders this with printBackground:true so the watermark + fills show.
 import type { MisChain } from '@/lib/engine/mis-data';
-import { pnlRows, bsAssetRows, bsLiabEquityRows, cfRows, ratioCards, kpis, trendSeries, inr, type StmtRow } from './present';
+import { cfRows, ratioCards, kpis, trendSeries, inr, type StmtRow } from './present';
+import { plScheduleIII, bsScheduleIII, SCH3_PL_FOOTNOTES, SCH3_BS_FOOTNOTES, type Sch3Row } from './schedule3';
 import { computeObservations } from '../insight/observations';
 import { computeDiagnoses } from '../insight/diagnoses';
 import { computeRecommendations, computeGoalTracking } from '../insight/recommendations';
@@ -19,6 +20,24 @@ function stmt(rows: StmtRow[]): string {
       return `<tr class="${cls}"><td>${esc(r.label)}${note}</td><td class="num">${esc(inr(r.paise))}</td></tr>`;
     })
     .join('');
+}
+
+// Schedule III statutory statement → 3-column table (Particulars · current · prior-year comparative).
+function stmt3(rows: Sch3Row[], curLabel: string, priorLabel: string | null, footnotes: string[]): string {
+  const amt = (p: number | null) => (p === null ? '—' : inr(p));
+  const head = `<tr class="hdr"><td>Particulars</td><td class="num">${esc(curLabel)}</td><td class="num">${esc(priorLabel ?? 'Prior year')}</td></tr>`;
+  const body = rows
+    .map((r) => {
+      const cls = r.kind === 'total' ? 'total' : r.kind === 'subtotal' ? 'subtotal' : r.kind === 'header' ? 'header' : 'line';
+      const no = r.no ? `<b>${esc(r.no)}</b> ` : '';
+      const note = r.note ? `<span class="note"> · ${esc(r.note)}</span>` : '';
+      const pad = r.indent ? ' style="padding-left:22px"' : '';
+      if (r.kind === 'header') return `<tr class="${cls}"><td colspan="3"${pad}>${no}${esc(r.label)}${note}</td></tr>`;
+      return `<tr class="${cls}"><td${pad}>${no}${esc(r.label)}${note}</td><td class="num">${esc(amt(r.curPaise))}</td><td class="num">${esc(amt(r.priorPaise))}</td></tr>`;
+    })
+    .join('');
+  const fn = footnotes.length ? `<tr class="fn"><td colspan="3"><ol>${footnotes.map((f) => `<li>${esc(f)}</li>`).join('')}</ol></td></tr>` : '';
+  return `<table class="stmt">${head}${body}${fn}</table>`;
 }
 
 function sparkSvg(values: number[]): string {
@@ -40,6 +59,8 @@ function sparkSvg(values: number[]): string {
 export function buildMisPrintHtml(chain: MisChain, selectedIdx: number): string {
   const periodMeta = chain.periods[selectedIdx];
   const result = chain.results[selectedIdx];
+  const prior = selectedIdx > 0 ? chain.results[selectedIdx - 1] : null;
+  const priorMeta = selectedIdx > 0 ? chain.periods[selectedIdx - 1] : null;
   const k = kpis(chain.results, selectedIdx);
   const cf = cfRows(result);
   const trends = trendSeries(chain.results);
@@ -125,6 +146,10 @@ export function buildMisPrintHtml(chain: MisChain, selectedIdx: number): string 
   table.stmt td.num { text-align:right; font-variant-numeric:tabular-nums lining-nums; white-space:nowrap; }
   tr.subtotal td { background:#f8fafc; font-weight:600; }
   tr.total td { background:#eef3fb; font-weight:700; color:#1e4fa8; border-top:1px solid #cbd5e1; }
+  tr.hdr td { font-size:8.5px; text-transform:uppercase; letter-spacing:.04em; color:#94a3b8; font-weight:700; border-bottom:1px solid #cbd5e1; }
+  tr.header td { font-weight:700; background:#f8fafc; }
+  tr.fn td { font-size:8.5px; color:#94a3b8; background:#fbfbf8; }
+  tr.fn ol { margin:3px 0 0 15px; padding:0; } tr.fn li { margin:1px 0; }
   .note { color:#94a3b8; font-weight:400; }
   .ratios { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:#eef2f6; }
   .ratio { background:#fff; padding:6px 10px; }
@@ -147,10 +172,8 @@ export function buildMisPrintHtml(chain: MisChain, selectedIdx: number): string 
       <div class="brand" style="text-align:right">Engine statements <b>CONSISTENCY-CHECKED</b> (identity battery)<br/>NOT VERIFIED — pending one-time CA rule-review</div>
     </header>
     <div class="kpis">${kpiHtml}</div>
-    <div class="grid2">
-      <div class="card"><h3>Profit &amp; Loss</h3><table class="stmt">${stmt(pnlRows(result))}</table></div>
-      <div class="card"><h3>Balance Sheet</h3><table class="stmt">${stmt(bsAssetRows(result))}<tr><td colspan="2" style="height:4px;background:#f1f5f9"></td></tr>${stmt(bsLiabEquityRows(result))}</table></div>
-    </div>
+    <div class="card"><h3>Statement of Profit and Loss <span class="badge">Schedule III · Div I</span></h3>${stmt3(plScheduleIII(result, prior), periodMeta.label, priorMeta?.label ?? null, SCH3_PL_FOOTNOTES)}</div>
+    <div class="card"><h3>Balance Sheet <span class="badge">Schedule III · Div I</span></h3>${stmt3(bsScheduleIII(result, prior), periodMeta.label, priorMeta?.label ?? null, SCH3_BS_FOOTNOTES)}</div>
     <div class="card"><h3>Cash Flow — indirect</h3>${cfHtml}</div>
     <div class="card"><h3>Observations <span class="badge">Tier 1 · UNVERIFIED</span></h3>${obsHtml}</div>
     <div class="card"><h3>Diagnoses <span class="badge">Tier 2 · UNVERIFIED</span></h3>${diagHtml}</div>

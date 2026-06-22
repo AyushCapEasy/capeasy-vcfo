@@ -167,7 +167,7 @@ export function computePeriod(i: PeriodEngineInput, prior: PeriodEngineInput | n
   const ratios = computeRatios(i, pnl, balanceSheet);
   const workingCapital = computeWorkingCapital(i, pnl);
   const startupMetrics = computeStartupMetrics(i, prior, pnl, cashFlow);
-  return { periodId: i.periodId, label: i.label, periodMonth: i.periodMonth, pnl, balanceSheet, cashFlow, ratios, workingCapital, startupMetrics };
+  return { periodId: i.periodId, label: i.label, periodMonth: i.periodMonth, pnl, balanceSheet, cashFlow, ratios, workingCapital, startupMetrics, naturalsPaise: i.naturals };
 }
 
 /** Compute a chain of consecutive periods (each linked to its predecessor). */
