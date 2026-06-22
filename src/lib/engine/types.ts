@@ -107,6 +107,10 @@ export type PeriodResult = {
   ratios: Ratios;
   workingCapital: WorkingCapital;
   startupMetrics: StartupMetrics;
+  // The engine's own per-category input naturals (paise), surfaced VERBATIM (no recomputation) so the
+  // statutory Schedule III view can build prescribed line items the lumped pnl/bs fields don't carry
+  // (e.g. employee benefits as its own expense line, named BS sub-lines). Same values, finer labels.
+  naturalsPaise: CategoryNaturals;
 };
 
 export type InvariantStatus = 'pass' | 'fail' | 'na';
