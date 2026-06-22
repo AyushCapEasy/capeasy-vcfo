@@ -76,6 +76,11 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
       </header>
 
       <main className="mx-auto w-full max-w-5xl flex-1 space-y-8 p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-white px-4 py-2.5 text-sm">
+          <span className="text-muted">Supporting schedules (AR/AP aging, headcount, recurring revenue, cash, capex, debt) — optional, each unlocks an extra dimension.</span>
+          <Link href={`/clients/${orgId}/periods/${periodId}/schedules`} className="shrink-0 font-medium text-primary hover:underline">Schedules →</Link>
+        </div>
+
         {staging ? (
           <ConfirmPanel orgId={orgId} periodId={periodId} filename={staging.filename} preview={staging.preview} />
         ) : (
