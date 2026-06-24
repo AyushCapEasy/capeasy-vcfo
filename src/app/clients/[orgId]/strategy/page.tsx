@@ -73,7 +73,7 @@ export default async function StrategyPage({ params }: { params: Promise<{ orgId
             <h1 className="font-serif text-[22px] font-semibold leading-tight tracking-[-0.01em] text-ink">Strategy</h1>
             <p className="mt-0.5 text-[12.5px] text-muted">{chain.org.legalName} · where you&rsquo;re heading &amp; what to consider · <span className="font-semibold text-amber-700">FORWARD-LOOKING — options, not advice</span></p>
           </div>
-          <span className="rounded-md bg-amber-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-700 ring-1 ring-inset ring-amber-600/20">Estimate · unverified</span>
+          <span className="rounded-md bg-amber-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-700 ring-1 ring-inset ring-amber-600/20">Estimate</span>
         </div>
       </header>
 
@@ -149,7 +149,7 @@ export default async function StrategyPage({ params }: { params: Promise<{ orgId
               </ul>
             </div>
 
-            <p className="pb-2 text-center text-[11.5px] text-muted">Strategic guidance is built on forecasts, which are estimates — these are options to weigh, not financial advice, and stay SAMPLE/unverified until CA sign-off.</p>
+            <p className="pb-2 text-center text-[11.5px] text-muted">Strategic guidance is built on forecasts, which are estimates — these are options to weigh, not financial advice.</p>
           </>
         )}
       </main>

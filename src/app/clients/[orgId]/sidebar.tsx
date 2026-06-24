@@ -71,7 +71,7 @@ export function Sidebar({ orgId, orgName, entityType }: { orgId: string; orgName
       <div className="px-5 pb-2 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.13em] text-[rgba(148,163,184,0.65)]">Workspace</div>
 
       {/* Nav */}
-      <nav className="relative flex flex-1 flex-col gap-[3px] px-3">
+      <nav className="relative flex flex-1 flex-col gap-[3px] px-3 pb-4">
         <Link href={base} className={live(pathname === base)}><NavIcon d={I.overview} /><span>Overview</span></Link>
         <Link href={`${base}/mis`} className={live(onMis)}><NavIcon d={I.mis} /><span>MIS Pack</span></Link>
         <Link href={`${base}/forecast`} className={live(pathname.startsWith(`${base}/forecast`))}><NavIcon d={I.forecast} /><span>Forecast</span></Link>
@@ -80,17 +80,6 @@ export function Sidebar({ orgId, orgName, entityType }: { orgId: string; orgName
         <Link href={`${base}/data-sources`} className={live(pathname.startsWith(`${base}/data-sources`))}><NavIcon d={I.data} /><span>Data Sources</span></Link>
         <Link href={`${base}/reconcile`} className={live(pathname.startsWith(`${base}/reconcile`))}><NavIcon d={I.reconcile} /><span>Reconcile</span></Link>
       </nav>
-
-      {/* Footer — honest unverified status (reinforces the watermark), tuned for the dark rail. */}
-      <div className="relative p-3.5">
-        <div className="flex items-center gap-2 rounded-lg border border-amber-300/20 bg-amber-400/10 px-2.5 py-2">
-          <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-amber-400" />
-          <div className="text-[11.5px] leading-tight">
-            <div className="font-semibold text-amber-200">Sample — unverified</div>
-            <div className="text-[#94A3B8]">Pending CA sign-off</div>
-          </div>
-        </div>
-      </div>
     </aside>
   );
 }

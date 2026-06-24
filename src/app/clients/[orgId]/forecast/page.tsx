@@ -106,7 +106,7 @@ export default async function ForecastPage({ params, searchParams }: { params: P
             <h1 className="font-serif text-[22px] font-semibold leading-tight tracking-[-0.01em] text-ink">Forecast</h1>
             <p className="mt-0.5 text-[12.5px] text-muted">{chain.org.legalName} · projected from {f.quality.periods} period{f.quality.periods === 1 ? '' : 's'} of real history · <span className="font-semibold text-amber-700">FORECAST — not actual</span></p>
           </div>
-          <span className="rounded-md bg-amber-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-700 ring-1 ring-inset ring-amber-600/20">Estimate · unverified</span>
+          <span className="rounded-md bg-amber-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-700 ring-1 ring-inset ring-amber-600/20">Estimate</span>
         </div>
       </header>
 
@@ -229,7 +229,7 @@ export default async function ForecastPage({ params, searchParams }: { params: P
               </Card>
             ) : null}
 
-            <p className="pb-2 text-center text-[11.5px] text-muted">Projections are estimates built on historical trend, not actuals — they will differ from real results, carry no assurance, and stay SAMPLE/unverified until CA sign-off. Round figures reflect deliberate low precision.</p>
+            <p className="pb-2 text-center text-[11.5px] text-muted">Projections are estimates built on historical trend, not actuals — they will differ from real results and carry no assurance. Round figures reflect deliberate low precision.</p>
           </>
         )}
       </main>

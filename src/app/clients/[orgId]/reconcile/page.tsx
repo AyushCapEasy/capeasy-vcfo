@@ -27,7 +27,7 @@ export default async function ReconcilePage({ params }: { params: Promise<{ orgI
             <h1 className="font-serif text-[22px] font-semibold leading-tight tracking-[-0.01em] text-ink">Reconcile</h1>
             <p className="mt-0.5 text-[12.5px] text-muted">{chain.org.legalName}{latest ? ` · books: ${latest.label}` : ''} · bank &amp; GST cross-checks · <span className="font-semibold text-amber-700">OVERLAY — the gap is the insight</span></p>
           </div>
-          <span className="rounded-md bg-amber-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-700 ring-1 ring-inset ring-amber-600/20">Unverified · cross-check</span>
+          <span className="rounded-md bg-amber-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-700 ring-1 ring-inset ring-amber-600/20">Cross-check</span>
         </div>
       </header>
 
@@ -49,7 +49,7 @@ export default async function ReconcilePage({ params }: { params: Promise<{ orgI
           <ReconcilePanel orgId={orgId} />
         )}
 
-        <p className="pb-2 text-center text-[11.5px] text-muted">Reconciliation is a cross-check, not an audit — it sees only the files you upload and stays SAMPLE/unverified. Parse-quality issues are shown apart from real gaps so a misread never reads as a compliance problem.</p>
+        <p className="pb-2 text-center text-[11.5px] text-muted">Reconciliation is a cross-check, not an audit — it sees only the files you upload. Parse-quality issues are shown apart from real gaps so a misread never reads as a compliance problem.</p>
       </main>
     </div>
   );

@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getMisChain, getPeriodDrilldown } from '@/lib/engine/mis-data';
 import { cfRows, ratioCards, type StmtRow } from '@/lib/mis/present';
 import { plScheduleIII, bsScheduleIII, type Sch3Row } from '@/lib/mis/schedule3';
-import { WATERMARK_TEXT } from '@/lib/watermark';
+import { WATERMARK_TEXT, WATERMARK_ENABLED } from '@/lib/watermark';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -43,16 +43,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orgI
 
   const wb = XLSX.utils.book_new();
 
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
-    [WATERMARK_TEXT],
-    [],
+  // Sample stamp only while the watermark posture is on; post-CA-verification it is dropped (one flag).
+  const coverRows: (string | number)[][] = [
+    ...(WATERMARK_ENABLED ? [[WATERMARK_TEXT], []] : []),
     ['Client', chain.org.legalName],
     ['Period', periodMeta.label],
     ['Status', periodMeta.status],
-    ['Note', 'All figures are computed by the engine and UNVERIFIED until CA sign-off. ₹ = INR.'],
-  ]), 'Pack (UNVERIFIED)');
+    ['Note', WATERMARK_ENABLED ? 'All figures are computed by the engine and UNVERIFIED until CA sign-off. ₹ = INR.' : 'All figures are computed by the engine. ₹ = INR.'],
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(coverRows), WATERMARK_ENABLED ? 'Pack (UNVERIFIED)' : 'Pack');
 
-  const tbAoA: (string | number)[][] = [[WATERMARK_TEXT], [], ['Category', 'Account code', 'Account name', 'Debit (₹)', 'Credit (₹)']];
+  const tbAoA: (string | number)[][] = [...(WATERMARK_ENABLED ? [[WATERMARK_TEXT], []] : []), ['Category', 'Account code', 'Account name', 'Debit (₹)', 'Credit (₹)']];
   for (const [cat, lines] of Object.entries(drilldown)) {
     for (const l of lines) tbAoA.push([cat, l.code, l.name, l.debitPaise / 100, l.creditPaise / 100]);
   }
