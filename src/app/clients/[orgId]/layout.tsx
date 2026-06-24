@@ -18,8 +18,11 @@ export default async function ClientLayout({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: org } = await supabase.from('orgs').select('legal_name, entity_type').eq('id', orgId).single();
+  const { data: org } = await supabase.from('orgs').select('legal_name, entity_type, status').eq('id', orgId).single();
   if (!org) notFound(); // not found OR RLS-denied (cross-tenant)
+  // Approval gate (app layer; RLS is the deeper guarantee): a pending org reaches NO data — it lands on
+  // the pending screen instead of the workspace shell. Existing orgs were grandfathered active in 0011.
+  if (org.status !== 'active') redirect('/pending');
 
   return (
     <div className="flex flex-1">

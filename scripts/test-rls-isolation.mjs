@@ -185,6 +185,31 @@ async function probeAll(label, email, password, own, other) {
   await c.auth.signOut();
 }
 
+// Approval gate: a PENDING org's own member can read its org row (sees status='pending_approval', so the
+// app can show the pending screen) but gets ZERO rows from EVERY client-data table — RLS is_active_org_member
+// locks all data until an admin approves. The data exists (seeded via service_role); the gate hides it.
+async function probePending(label, email, password, own) {
+  const c = createClient(url, anonKey, { auth: { persistSession: false } });
+  const si = await c.auth.signInWithPassword({ email, password });
+  if (si.error) throw new Error(`${label} sign-in failed: ${si.error.message}`);
+  console.log(`\n${label}  (pending org=${own.name})`);
+  let visible = 0;
+  for (const s of own.specs) {
+    const r = await c.from(s.t).select('id').eq('org_id', own.id);
+    const n = r.data?.length ?? 0;
+    visible += n;
+    note(n === 0, `pending org leaks ${s.t} (${n} rows)`);
+  }
+  const aud = await c.from('audit_log').select('id').eq('org_id', own.id);
+  visible += aud.data?.length ?? 0;
+  note((aud.data?.length ?? 0) === 0, 'pending org leaks audit_log');
+  const orgRow = await c.from('orgs').select('id,status').eq('id', own.id);
+  const seesOwnOrg = (orgRow.data?.length ?? 0) === 1 && orgRow.data[0].status === 'pending_approval';
+  note(seesOwnOrg, 'pending org row+status readable to its own member');
+  console.log(`  ${'(all client data)'.padEnd(24)} data-visible:${visible === 0 ? '✓ zero (gated)' : '✗ LEAK ' + visible + ' rows'}  own-org-row:${seesOwnOrg ? '✓ readable (status=pending)' : '✗'}  [APPROVAL GATE]`);
+  await c.auth.signOut();
+}
+
 // --- Self-cleaning harness: create EPHEMERAL probe orgs/users, run the checks, then sweep them away. ----
 // audit_log is hard append-only (a trigger blocks UPDATE/DELETE for ALL roles), and an org can't be deleted
 // while audit rows reference it (ON DELETE SET NULL fires the blocked UPDATE). So administrative teardown
@@ -229,10 +254,10 @@ async function makeAnalyst(slug) {
   return u;
 }
 
-async function makeOrgWithData(name, analyst, specs) {
+async function makeOrgWithData(name, analyst, specs, status = 'active') {
   const org = (await db.query(
-    `insert into public.orgs (legal_name, entity_type, state, gst_scheme, has_employees)
-     values ($1,'pvt_ltd','Maharashtra','monthly',true) returning id`, [name]
+    `insert into public.orgs (legal_name, entity_type, state, gst_scheme, has_employees, status)
+     values ($1,'pvt_ltd','Maharashtra','monthly',true,$2) returning id`, [name, status]
   )).rows[0].id;
   await db.query(`insert into public.org_members (org_id, user_id, role) values ($1,$2,'analyst')`, [org, analyst.id]);
   const periodId = (await db.query(
@@ -269,7 +294,12 @@ try {
   await probeAll('analyst A', analystA.email, analystA.password, orgA, orgB);
   await probeAll('analyst B', analystB.email, analystB.password, orgB, orgA);
 
-  console.log(`\nRESULT: ${failures === 0 ? 'PASS ✓ — tenant isolation holds across every table, bidirectionally' : `FAIL ✗ — ${failures} isolation check(s) leaked`}`);
+  // --- Approval gate: a PENDING org (its own member, live session) must see ZERO of its own data. -----
+  const analystP = await makeAnalyst('p');
+  const pend = await makeOrgWithData(`${ORG_PREFIX}PENDING-${RUN}`, analystP, specs, 'pending_approval');
+  await probePending('analyst PENDING', analystP.email, analystP.password, { name: 'Pending', id: pend.id, periodId: pend.periodId, specs });
+
+  console.log(`\nRESULT: ${failures === 0 ? 'PASS ✓ — tenant isolation holds across every table, bidirectionally; pending orgs see zero data' : `FAIL ✗ — ${failures} isolation check(s) leaked`}`);
   process.exitCode = failures === 0 ? 0 : 1;
 } finally {
   // --- Teardown: sweep every probe artifact (pass OR fail), then prove the baseline is restored. --------

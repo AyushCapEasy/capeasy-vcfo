@@ -24,7 +24,7 @@ export default async function Home() {
   // RLS-scoped: orgs returns only the client orgs this user is a member of.
   const { data: orgs } = await supabase
     .from('orgs')
-    .select('id, legal_name, entity_type, state')
+    .select('id, legal_name, entity_type, state, status')
     .order('legal_name');
 
   const { data: memberships } = await supabase.from('org_members').select('org_id, role');
@@ -64,12 +64,14 @@ export default async function Home() {
             {orgs.map((o) => (
               <li key={o.id}>
                 <Link
-                  href={`/clients/${o.id}`}
+                  href={o.status === 'pending_approval' ? '/pending' : `/clients/${o.id}`}
                   className="card block p-4 transition-all hover:border-line-strong hover:shadow-md"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-semibold text-ink">{o.legal_name}</span>
-                    <span className="badge badge-neutral">{roleByOrg.get(o.id) ?? '—'}</span>
+                    {o.status === 'pending_approval'
+                      ? <span className="badge badge-warning">Pending</span>
+                      : <span className="badge badge-neutral">{roleByOrg.get(o.id) ?? '—'}</span>}
                   </div>
                   <p className="mt-1.5 text-xs text-muted">
                     {o.entity_type}
