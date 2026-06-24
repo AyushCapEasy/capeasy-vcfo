@@ -8,7 +8,7 @@ export function Watermark() {
   const tile = encodeURIComponent(
     `<svg xmlns='http://www.w3.org/2000/svg' width='460' height='300'>` +
       `<text x='10' y='160' transform='rotate(-28 230 150)' font-family='Inter, system-ui, sans-serif' ` +
-      `font-size='20' font-weight='700' fill='rgba(30,79,168,0.11)'>${WATERMARK_TEXT}</text></svg>`
+      `font-size='20' font-weight='700' fill='rgba(11,31,77,0.11)'>${WATERMARK_TEXT}</text></svg>`
   );
   return (
     <div

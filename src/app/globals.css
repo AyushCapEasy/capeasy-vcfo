@@ -9,63 +9,82 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ============================================================================================
-   CapEasy vCFO — Design System (V1 redesign, m-redesign — warm-neutral, Claude Design canonical)
-   Supersedes the V0 cool-slate system. Warm off-white surfaces, IBM Plex Sans + Source Serif 4,
-   blue #1E4FA8 primary, restrained green for favourable. Color carries financial MEANING, not
-   decoration. This block is the single source of design truth; screens compose from it. Every
-   component primitive and screen is now on the warm tokens — the redesign is complete and the app
-   carries no cool-grey utilities anywhere.
+   CapEasy vCFO — Design System (V2 redesign, m-redesign-v2 — NAVY + EMERALD, Claude Design canonical
+   "Meridian CFO" handoff). Supersedes the V1 warm-neutral system. Cool off-white canvas, Sora
+   (headings) + Public Sans (body/figures), navy #0B1F4D for authority/figures, emerald #047857 for
+   action & positive health. Color carries financial MEANING, not decoration. This block is the
+   single source of design truth; screens compose from it. The redesign is incremental — screens are
+   re-skinned to navy+emerald one at a time; no warm-neutral utilities should remain when complete.
    ============================================================================================ */
 @theme {
-  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-serif: var(--font-source-serif), ui-serif, Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* No real serif in this system — `--font-serif` is repointed to Sora so existing `font-serif`
+     headings render as Sora (the display face) with zero screen churn. */
+  --font-serif: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
 
-  /* Brand */
-  --color-primary: #1e4fa8;
+  /* Brand — EMERALD is the action + positive color (CTA, active, links, focus). */
+  --color-primary: #047857;          /* emerald core */
   --color-primary-foreground: #ffffff;
-  --color-primary-50: #eef3fb;   /* tint — total rows, selected pills */
-  --color-primary-700: #19437f;  /* hover/pressed */
-  --color-accent: #f08025;
+  --color-primary-50: #ecfdf5;       /* emerald wash — total rows, selected pills, tints */
+  --color-primary-700: #065f46;      /* emerald dark — hover/pressed */
+  --color-accent: #d97706;           /* caution amber — UNVERIFIED ribbon / pending-CA flags */
   --color-accent-foreground: #ffffff;
 
-  /* Neutrals (WARM grey — redesign; supersedes the cool slate) */
-  --color-ink: #191c20;          /* headings, primary figures */
-  --color-body: #5a636e;         /* body text */
-  --color-muted: #939aa4;        /* secondary text */
-  --color-faint: #aeb4bc;        /* tertiary / captions */
-  --color-line: #e7e7e1;         /* borders (warm) */
-  --color-line-strong: #d7d7d0;  /* stronger divider */
-  --color-hair: #f2f2ec;         /* hairline dividers (warm) */
-  --color-canvas: #fbfbf8;       /* warm off-white — app background behind white surfaces */
+  /* NAVY — authority: headings, primary figures, sidebar, structural depth. */
+  --color-ink: #0b1f4d;              /* navy core — headings, primary figures */
+  --color-navy: #0b1f4d;
+  --color-navy-light: #0f2a5e;
+  --color-navy-deep: #08183a;
 
-  /* Semantic — reserved for FINANCIAL meaning only (favorable/unfavorable, +/−) */
-  --color-positive: #1c7a50;     /* redesign green */
-  --color-positive-50: #eaf4ee;  /* positive wash — tints / backgrounds */
-  --color-negative: #b91c1c;     /* red-700 */
-  --color-warning: #b45309;      /* amber-700 — UNVERIFIED / pending-CA flags */
+  /* EMERALD scale (hero cards, gradients, accents on dark). */
+  --color-emerald: #047857;
+  --color-emerald-dark: #065f46;
+  --color-emerald-mid: #059669;
+  --color-emerald-bright: #10b981;   /* bright — use sparingly */
+  --color-mint: #6ee7b7;             /* mint — accents on navy */
 
-  /* Radii — institutional: confident, not bubbly */
-  --radius-card: 0.75rem; /* 12px */
-  --radius-ctl: 0.5rem;   /* 8px — buttons, inputs, pills */
+  /* Text + surfaces (cool slate). */
+  --color-body: #334155;             /* strong body text */
+  --color-muted: #5b6b82;            /* secondary text */
+  --color-faint: #94a3b8;            /* tertiary / captions */
+  --color-line: #e7edf4;             /* hairline border */
+  --color-line-strong: #d8e0ec;      /* stronger border / divider */
+  --color-hair: #f1f5f9;             /* hairline fill — bar tracks, ghost-hover */
+  --color-canvas: #f6f8fb;           /* cool off-white — app canvas behind white surfaces */
+
+  /* Semantic — reserved for FINANCIAL meaning only (favorable/unfavorable, +/−).
+     Emerald doubles as the positive color, by design. */
+  --color-positive: #047857;         /* emerald */
+  --color-positive-50: #ecfdf5;      /* positive wash */
+  --color-negative: #dc2626;         /* red-600 — unfavorable */
+  --color-warning: #d97706;          /* amber-600 — caution / UNVERIFIED */
+
+  /* Radii — institutional, matched to the Meridian handoff. */
+  --radius-card: 1rem;       /* 16px — cards */
+  --radius-ctl: 0.5625rem;   /* 9px — buttons, inputs, pills */
 }
 
 :root {
   color-scheme: light; /* render native controls (select popups, date pickers, scrollbars) in light mode */
-  --background: #ffffff;          /* white surfaces sit on the warm --color-canvas page */
-  --foreground: #191c20;          /* warm ink */
+  --background: #f6f8fb;          /* cool canvas behind white surfaces */
+  --foreground: #334155;          /* strong slate body text (headings/figures use navy --color-ink) */
 
   /* Prototype token aliases (Claude Design variable names) → canonical tokens, so screen restyles can
-     reuse the mockup's variable names verbatim for pixel fidelity. */
-  --pri: var(--color-primary);
+     reuse the Meridian mockup's variable names verbatim for pixel fidelity. */
+  --pri: var(--color-primary);    /* emerald action */
+  --navy: var(--color-navy);
   --ink: var(--color-ink);
   --ink2: var(--color-body);
   --ink3: var(--color-muted);
+  --ink4: var(--color-faint);
   --line: var(--color-line);
   --line2: var(--color-line-strong);
   --surface: #ffffff;
   --surface2: var(--color-canvas);
   --pos: var(--color-positive);
   --posw: var(--color-positive-50);
+  --mint: var(--color-mint);
 }
 
 @layer base {
@@ -76,8 +95,8 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
-  /* Headings read as precise, not loud — slight negative tracking, set in ink. */
-  h1, h2, h3, h4 { color: var(--color-ink); letter-spacing: -0.011em; }
+  /* Headings read as precise, not loud — Sora display face, navy ink, slight negative tracking. */
+  h1, h2, h3, h4 { font-family: var(--font-display); color: var(--color-ink); letter-spacing: -0.011em; }
   h1 { letter-spacing: -0.02em; }
   /* One consistent keyboard-focus treatment app-wide (inputs define their own ring via .input). */
   :where(a, button, [role="button"], summary):focus-visible {
@@ -95,8 +114,8 @@
 
 /* ---- Shared component primitives (composed by screens in V1+). Additive: unused until applied. ---- */
 @layer components {
-  /* Surfaces — warm white cards on the off-white canvas */
-  .card { @apply rounded-[var(--radius-card)] border border-line bg-white shadow-sm; }
+  /* Surfaces — white cards on the cool off-white canvas, navy-tinted shadow (Meridian). */
+  .card { @apply rounded-[var(--radius-card)] border border-line bg-white shadow-[0_1px_2px_rgba(11,31,77,0.04)]; }
   .panel-head { @apply flex items-center justify-between gap-3 border-b border-line px-5 py-3.5; }
   .panel-title { @apply text-sm font-semibold text-ink; }
   .panel-sub { @apply mt-0.5 text-xs text-muted; }
@@ -104,7 +123,7 @@
 
   /* Buttons */
   .btn { @apply inline-flex items-center justify-center gap-1.5 rounded-[var(--radius-ctl)] px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50; }
-  .btn-primary { @apply bg-primary text-white shadow-sm hover:bg-primary-700; }
+  .btn-primary { @apply bg-primary text-white shadow-[0_2px_8px_rgba(4,120,87,0.25)] hover:bg-primary-700; }
   .btn-secondary { @apply border border-line-strong bg-white text-body shadow-sm hover:bg-canvas; }
   .btn-ghost { @apply text-body hover:bg-hair; }
 
