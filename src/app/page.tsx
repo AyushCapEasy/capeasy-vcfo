@@ -1,7 +1,7 @@
-// src/app/page.tsx — authenticated home (analyst shell, minimal). Everything here is read
-// through the ANON-key server client, so RLS decides what is visible: the signed-in user sees
-// ONLY the client orgs they are a member of. This is the first end-to-end proof of auth + RLS +
-// multi-tenancy. The full MIS workflow (intake → compute → pack) lands in later milestones.
+// src/app/page.tsx — authenticated home (tenant view): the signed-in user's own workspace(s). Read
+// through the ANON-key server client so RLS decides what is visible — the user sees ONLY the orgs they
+// belong to. Superadmins are redirected to /admin above; tenant-facing copy only ("Workspaces", "your
+// workspace") — no operator/internal language here.
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -57,11 +57,11 @@ export default async function Home() {
       </header>
 
       <main className="mx-auto w-full max-w-5xl flex-1 p-6">
-        <h1 className="text-xl font-bold text-ink">Client workspaces</h1>
+        <h1 className="text-xl font-bold text-ink">Workspaces</h1>
         <p className="mt-1 text-sm text-muted">
           {orgs?.length
-            ? `You have access to ${orgs.length} client ${orgs.length === 1 ? 'org' : 'orgs'} (RLS-scoped).`
-            : 'No client orgs are visible to your account yet.'}
+            ? 'Open your workspace to view your MIS pack, forecast and insights.'
+            : 'Set up your workspace to get started.'}
         </p>
 
         {orgs?.length ? (

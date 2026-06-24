@@ -123,7 +123,7 @@ function GoalsBlock({ goals }: { goals: GoalTrack[] }) {
     <div className="divide-y divide-line">
       <p className="flex items-start gap-1.5 border-b border-amber-200/60 bg-amber-50/60 px-5 py-2.5 text-xs text-amber-700">
         <span aria-hidden>⚠</span>
-        <span>Targets are PLACEHOLDER stubs (D-013) — real analyst-entered client goals are a TODO. The tracking logic below is live against the engine.</span>
+        <span>The targets shown here are placeholders for now — custom goal-setting is coming. The tracking below runs live against your numbers.</span>
       </p>
       {goals.map((g) => (
         <div key={g.goalId} className="flex items-start gap-2 px-5 py-3 text-sm">

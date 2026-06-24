@@ -115,7 +115,7 @@ export function buildMisPrintHtml(chain: MisChain, selectedIdx: number): string 
         .map((r) => `<tr class="subtotal"><td colspan="2">${esc(r.action)}<span class="note"> · ${esc(r.ruleId)} · ${esc(r.confidence)}</span></td></tr><tr><td colspan="2" style="padding-left:22px;color:#5b6b82">Impact: ${esc(r.quantifiedImpact.basis)}</td></tr>`)
         .join('')}</table>`
     : `<p class="muted pad">No recommendations — no observed move this period implies an actionable lever (favourable moves don't generate advice).</p>`;
-  const goalsHtml = `<p class="muted pad">⚠ PLACEHOLDER targets (D-013) — real client goals are a TODO; tracking is live against the engine.</p><table class="stmt">${goalTracking
+  const goalsHtml = `<p class="muted pad">Targets shown here are placeholders for now — custom goal-setting is coming; tracking runs live against your numbers.</p><table class="stmt">${goalTracking
     .map((g) => `<tr class="line"><td>${esc(g.metric)} <span class="note">· ${esc(g.detail)}</span></td><td class="num">${esc(g.trackStatus.replace('_', ' ').toUpperCase())}</td></tr>`)
     .join('')}</table>`;
 
