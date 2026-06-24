@@ -47,9 +47,11 @@ function StatementBlock({ rows, drilldown }: { rows: StmtRow[]; drilldown: Recor
     <div className="divide-y divide-line">
       {rows.map((row) => {
         const accounts = (row.codes ?? []).flatMap((c) => drilldown[c] ?? []);
+        // Grand total reads as an authoritative statement rule (navy double-border); a loss shows in red.
+        const isLoss = row.kind === 'total' && (row.paise ?? 0) < 0;
         const amountCls =
-          row.kind === 'total' ? 'text-primary font-bold' : row.kind === 'subtotal' ? 'font-semibold text-ink' : (row.paise ?? 0) < 0 ? 'text-muted' : 'text-ink';
-        const rowCls = row.kind === 'total' ? 'bg-primary-50 border-t border-line' : row.kind === 'subtotal' ? 'bg-canvas' : '';
+          row.kind === 'total' ? (isLoss ? 'text-negative font-bold' : 'text-ink font-bold') : row.kind === 'subtotal' ? 'font-semibold text-ink' : (row.paise ?? 0) < 0 ? 'text-muted' : 'text-ink';
+        const rowCls = row.kind === 'total' ? 'border-t-2 border-ink' : row.kind === 'subtotal' ? 'bg-canvas' : '';
         if (accounts.length) {
           return (
             <details key={row.label} className="group">
@@ -108,8 +110,10 @@ function Sch3Statement({ rows, drilldown, footnotes, curLabel, priorLabel }: {
       <div className="divide-y divide-line">
         {rows.map((row, i) => {
           const accounts = (row.codes ?? []).flatMap((c) => drilldown[c] ?? []);
-          const rowCls = row.kind === 'total' ? 'bg-primary-50' : row.kind === 'subtotal' ? 'bg-canvas' : '';
-          const numCls = row.kind === 'total' ? 'font-bold text-primary' : row.kind === 'subtotal' ? 'font-semibold text-ink' : 'text-ink';
+          // Grand total reads as an authoritative statement rule (navy double-border); a loss shows in red.
+          const isLoss = row.kind === 'total' && (row.curPaise ?? 0) < 0;
+          const rowCls = row.kind === 'total' ? 'border-t-2 border-ink' : row.kind === 'subtotal' ? 'bg-canvas' : '';
+          const numCls = row.kind === 'total' ? (isLoss ? 'font-bold text-negative' : 'font-bold text-ink') : row.kind === 'subtotal' ? 'font-semibold text-ink' : 'text-ink';
           const label = (
             <span className={`flex items-baseline gap-1.5 ${row.indent ? 'pl-4' : ''}`}>
               {row.no ? <span className="w-5 shrink-0 text-[10px] font-semibold text-muted">{row.no}</span> : null}
@@ -123,7 +127,8 @@ function Sch3Statement({ rows, drilldown, footnotes, curLabel, priorLabel }: {
           const nums = (
             <>
               <span className={`num ${numCls}`}>{amt(row.curPaise)}</span>
-              <span className={`num ${row.kind === 'line' ? 'text-muted' : numCls}`}>{amt(row.priorPaise)}</span>
+              {/* Prior-year comparative is the secondary reference — consistently muted, weighted on totals. */}
+              <span className={`num text-muted ${row.kind === 'subtotal' || row.kind === 'total' ? 'font-semibold' : ''}`}>{amt(row.priorPaise)}</span>
             </>
           );
           if (accounts.length) {
