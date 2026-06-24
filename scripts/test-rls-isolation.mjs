@@ -210,6 +210,40 @@ async function probePending(label, email, password, own) {
   await c.auth.signOut();
 }
 
+// Superadmin gate (non-superadmin): the admin RPCs must reveal/approve NOTHING. Even though the function
+// is gated in the DB, prove it from a live non-superadmin session.
+async function probeAdminDenied(label, email, password, pendId) {
+  const c = createClient(url, anonKey, { auth: { persistSession: false } });
+  const si = await c.auth.signInWithPassword({ email, password });
+  if (si.error) throw new Error(`${label} sign-in failed: ${si.error.message}`);
+  const list = await c.rpc('admin_list_pending_orgs');
+  note((list.data?.length ?? 0) === 0, 'non-superadmin admin_list returns nothing');
+  const appr = await c.rpc('approve_org', { p_org: pendId });
+  note(!!appr.error, 'non-superadmin approve_org denied');
+  const after = await db.query(`select status from public.orgs where id=$1`, [pendId]);
+  note(after.rows[0]?.status === 'pending_approval', 'org still pending after a denied approve');
+  console.log(`\n${label}  admin_list:${(list.data?.length ?? 0) === 0 ? '✓ empty' : '✗ LEAK'}  approve:${appr.error ? '✓ denied' : '✗ ALLOWED'}  [SUPERADMIN GATE]`);
+  await c.auth.signOut();
+}
+
+// Superadmin granted: can LIST + APPROVE, but must STILL be unable to read another tenant's DATA (a
+// superadmin sees the approval queue, not tenant books — data isolation holds for everyone).
+async function probeSuperadmin(label, email, password, pendId, otherOrgId) {
+  const c = createClient(url, anonKey, { auth: { persistSession: false } });
+  const si = await c.auth.signInWithPassword({ email, password });
+  if (si.error) throw new Error(`${label} sign-in failed: ${si.error.message}`);
+  const list = await c.rpc('admin_list_pending_orgs');
+  note((list.data?.length ?? 0) >= 1, 'superadmin admin_list returns pending orgs');
+  const otherData = await c.from('periods').select('id').eq('org_id', otherOrgId);
+  note((otherData.data?.length ?? 0) === 0, 'superadmin CANNOT read another tenant data (isolation holds)');
+  const appr = await c.rpc('approve_org', { p_org: pendId });
+  note(!appr.error, 'superadmin approve_org succeeds');
+  const after = await db.query(`select status from public.orgs where id=$1`, [pendId]);
+  note(after.rows[0]?.status === 'active', 'approve_org flipped pending -> active');
+  console.log(`${label}  admin_list:${(list.data?.length ?? 0) >= 1 ? '✓ visible' : '✗'}  other-tenant-data:${(otherData.data?.length ?? 0) === 0 ? '✓ still isolated' : '✗ LEAK'}  approve:${!appr.error ? '✓ flipped active' : '✗ failed'}  [SUPERADMIN GATE]`);
+  await c.auth.signOut();
+}
+
 // --- Self-cleaning harness: create EPHEMERAL probe orgs/users, run the checks, then sweep them away. ----
 // audit_log is hard append-only (a trigger blocks UPDATE/DELETE for ALL roles), and an org can't be deleted
 // while audit rows reference it (ON DELETE SET NULL fires the blocked UPDATE). So administrative teardown
@@ -243,6 +277,9 @@ async function sweepProbes() {
     }
     if (probeUsers.length) await db.query(`delete from public.audit_log where actor_id = any($1)`, [probeUsers.map((u) => u.id)]);
   });
+  // Drop any superadmin grant a probe user picked up (FK cascade would too, but be explicit — a leftover
+  // superadmin row for a deleted user would be a real residue).
+  if (probeUsers.length) await db.query(`delete from public.app_admins where user_id = any($1)`, [probeUsers.map((u) => u.id)]);
   for (const u of probeUsers) await admin.auth.admin.deleteUser(u.id); // cascades profiles
   return { orgs: orgIds.length, users: probeUsers.length };
 }
@@ -299,7 +336,13 @@ try {
   const pend = await makeOrgWithData(`${ORG_PREFIX}PENDING-${RUN}`, analystP, specs, 'pending_approval');
   await probePending('analyst PENDING', analystP.email, analystP.password, { name: 'Pending', id: pend.id, periodId: pend.periodId, specs });
 
-  console.log(`\nRESULT: ${failures === 0 ? 'PASS ✓ — tenant isolation holds across every table, bidirectionally; pending orgs see zero data' : `FAIL ✗ — ${failures} isolation check(s) leaked`}`);
+  // --- Superadmin / /admin gate: non-superadmin gets nothing; superadmin can list+approve but a
+  //     superadmin still cannot read another tenant's data. (analystA is granted then swept in teardown.)
+  await probeAdminDenied('analyst A · non-superadmin', analystA.email, analystA.password, pend.id);
+  await db.query(`insert into public.app_admins (user_id) values ($1) on conflict do nothing`, [analystA.id]);
+  await probeSuperadmin('analyst A · granted superadmin', analystA.email, analystA.password, pend.id, orgB.id);
+
+  console.log(`\nRESULT: ${failures === 0 ? 'PASS ✓ — tenant isolation holds bidirectionally; pending orgs see zero data; superadmin gate enforced' : `FAIL ✗ — ${failures} isolation check(s) leaked`}`);
   process.exitCode = failures === 0 ? 0 : 1;
 } finally {
   // --- Teardown: sweep every probe artifact (pass OR fail), then prove the baseline is restored. --------
