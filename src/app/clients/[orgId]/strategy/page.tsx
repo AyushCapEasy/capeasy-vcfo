@@ -45,7 +45,7 @@ function LeverCard({ lever }: { lever: StrategicLever }) {
     );
   }
   return (
-    <div className="rounded-lg border border-line bg-canvas p-4">
+    <div className="rounded-lg border border-line border-l-2 border-l-primary/60 bg-canvas p-4">
       <p className="text-[13px] font-semibold text-ink">{lever.title}</p>
       <p className="mt-1.5 text-[12.5px] leading-relaxed text-body">{lever.rationale}</p>
       <Traces traces={lever.traces} />

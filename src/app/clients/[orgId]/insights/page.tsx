@@ -109,7 +109,7 @@ function RecommendationsBlock({ recs }: { recs: Recommendation[] }) {
       {recs.map((r, i) => (
         <li key={i} className="px-5 py-3.5 text-sm">
           <div className="flex items-start gap-2.5">
-            <span className="mt-1.5 h-3.5 w-0.5 shrink-0 rounded-full bg-accent" aria-hidden />
+            <span className="mt-1.5 h-3.5 w-0.5 shrink-0 rounded-full bg-primary" aria-hidden />
             <div className="flex-1">
               <div className="flex items-start gap-2">
                 <span className="flex-1 font-medium text-ink"><span className="mr-1 text-[11px] font-bold uppercase tracking-wide text-primary">Do</span>{r.action}</span>
