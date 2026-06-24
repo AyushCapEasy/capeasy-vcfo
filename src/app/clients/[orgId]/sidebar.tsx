@@ -73,12 +73,12 @@ export function Sidebar({ orgId, orgName, entityType }: { orgId: string; orgName
       {/* Nav */}
       <nav className="relative flex flex-1 flex-col gap-[3px] px-3 pb-4">
         <Link href={base} className={live(pathname === base)}><NavIcon d={I.overview} /><span>Overview</span></Link>
-        <Link href={`${base}/mis`} className={live(onMis)}><NavIcon d={I.mis} /><span>MIS Pack</span></Link>
+        <Link href={`${base}/mis`} className={live(onMis)}><NavIcon d={I.mis} /><span>Financials</span></Link>
         <Link href={`${base}/forecast`} className={live(pathname.startsWith(`${base}/forecast`))}><NavIcon d={I.forecast} /><span>Forecast</span></Link>
         <Link href={`${base}/strategy`} className={live(pathname.startsWith(`${base}/strategy`))}><NavIcon d={I.strategy} /><span>Strategy</span></Link>
         <Link href={`${base}/insights`} className={live(pathname.startsWith(`${base}/insights`))}><NavIcon d={I.insights} /><span>Insights</span></Link>
-        <Link href={`${base}/data-sources`} className={live(pathname.startsWith(`${base}/data-sources`))}><NavIcon d={I.data} /><span>Data Sources</span></Link>
-        <Link href={`${base}/reconcile`} className={live(pathname.startsWith(`${base}/reconcile`))}><NavIcon d={I.reconcile} /><span>Reconcile</span></Link>
+        <Link href={`${base}/data-sources`} className={live(pathname.startsWith(`${base}/data-sources`))}><NavIcon d={I.data} /><span>Your Data</span></Link>
+        <Link href={`${base}/reconcile`} className={live(pathname.startsWith(`${base}/reconcile`))}><NavIcon d={I.reconcile} /><span>Bank &amp; GST Check</span></Link>
       </nav>
     </aside>
   );

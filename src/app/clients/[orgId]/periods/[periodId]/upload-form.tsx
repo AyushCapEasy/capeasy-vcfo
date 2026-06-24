@@ -21,10 +21,10 @@ export function UploadForm({ orgId, periodId }: { orgId: string; periodId: strin
           className="text-sm text-muted file:mr-3 file:rounded-[var(--radius-ctl)] file:border file:border-line-strong file:bg-white file:px-3.5 file:py-2 file:text-sm file:font-medium file:text-body hover:file:bg-canvas"
         />
         <button type="submit" disabled={pending} className="btn btn-primary">
-          {pending ? 'Uploading…' : 'Upload trial balance'}
+          {pending ? 'Uploading…' : 'Upload'}
         </button>
       </div>
-      <p className="text-xs text-muted">CSV or XLSX trial balance, or a Tally TB XML export (reconstructed in-memory; you confirm the rows before anything is saved).</p>
+      <p className="text-xs text-muted">CSV or XLSX accounts, or a Tally export (read in memory; you confirm the rows before anything is saved).</p>
 
       {state.errors?.length ? (
         <div role="alert" className="rounded-[var(--radius-ctl)] border border-red-200 bg-red-50 p-3.5 text-sm">

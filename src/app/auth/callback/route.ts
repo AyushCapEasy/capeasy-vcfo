@@ -15,7 +15,17 @@ export async function GET(request: NextRequest) {
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(`${origin}${dest}`);
+    if (!error) {
+      // Count this sign-in too (welcome-guide cadence). Best-effort; never blocks the redirect.
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: p } = await supabase.from('profiles').select('login_count').eq('id', user.id).single();
+          await supabase.from('profiles').update({ login_count: (p?.login_count ?? 0) + 1 }).eq('id', user.id);
+        }
+      } catch { /* non-critical */ }
+      return NextResponse.redirect(`${origin}${dest}`);
+    }
   }
   return NextResponse.redirect(`${origin}/login?error=confirmation`);
 }

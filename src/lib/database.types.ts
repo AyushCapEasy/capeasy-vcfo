@@ -232,6 +232,9 @@ export type Database = {
           email: string | null
           created_at: string
           updated_at: string
+          login_count: number
+          setup_complete: boolean
+          welcome_dismissed: boolean
         }
         Insert: {
           id: string
@@ -239,6 +242,9 @@ export type Database = {
           email?: string | null
           created_at?: string
           updated_at?: string
+          login_count?: number
+          setup_complete?: boolean
+          welcome_dismissed?: boolean
         }
         Update: {
           id?: string
@@ -246,6 +252,9 @@ export type Database = {
           email?: string | null
           created_at?: string
           updated_at?: string
+          login_count?: number
+          setup_complete?: boolean
+          welcome_dismissed?: boolean
         }
         Relationships: []
       }

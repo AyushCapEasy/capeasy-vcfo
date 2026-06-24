@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server';
 import { isSuperadmin } from '@/lib/admin/rpc';
 import { signOut } from './actions';
 import { CreateWorkspaceForm } from './onboarding/create-workspace-form';
+import { WelcomeGuide } from './welcome-guide';
 
 export default async function Home() {
   const supabase = await createClient();
@@ -22,9 +23,13 @@ export default async function Home() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, email')
+    .select('full_name, email, login_count, setup_complete, welcome_dismissed')
     .eq('id', user.id)
     .single();
+
+  // Welcome guide: show on odd logins (1, 3, 5…) until setup is done or the user opted out.
+  const showWelcome = !!profile && (profile.login_count % 2 === 1) && !profile.setup_complete && !profile.welcome_dismissed;
+  const firstName = (profile?.full_name ?? '').trim().split(/\s+/)[0] || null;
 
   // RLS-scoped: orgs returns only the client orgs this user is a member of.
   const { data: orgs } = await supabase
@@ -37,11 +42,12 @@ export default async function Home() {
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
+      {showWelcome ? <WelcomeGuide firstName={firstName} /> : null}
       <header className="border-b border-line bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3.5">
           <div className="flex items-baseline gap-2">
             <span className="text-sm font-semibold text-ink">CapEasy vCFO</span>
-            <span className="text-xs text-muted">MIS Engine</span>
+            <span className="text-xs text-muted">Financials</span>
           </div>
           <div className="flex items-center gap-3 text-sm">
             <span className="text-muted">
@@ -60,7 +66,7 @@ export default async function Home() {
         <h1 className="text-xl font-bold text-ink">Workspaces</h1>
         <p className="mt-1 text-sm text-muted">
           {orgs?.length
-            ? 'Open your workspace to view your MIS pack, forecast and insights.'
+            ? 'Open your workspace to view your financials, forecast and insights.'
             : 'Set up your workspace to get started.'}
         </p>
 
@@ -89,7 +95,7 @@ export default async function Home() {
         ) : (
           <div className="card mx-auto mt-6 max-w-lg p-6 shadow-sm">
             <h2 className="text-base font-semibold text-ink">Create your workspace</h2>
-            <p className="mb-4 mt-1 text-[13px] text-muted">Set up your company to start turning your books into a structured MIS pack.</p>
+            <p className="mb-4 mt-1 text-[13px] text-muted">Set up your company to start turning your books into clear financials.</p>
             <CreateWorkspaceForm />
           </div>
         )}

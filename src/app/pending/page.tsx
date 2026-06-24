@@ -32,7 +32,7 @@ export default async function PendingPage() {
             <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Pending review
           </span>
           <p className="mt-4 text-sm leading-relaxed text-body">
-            Your workspace{name ? <> <strong className="text-ink">{name}</strong></> : null} has been created and is awaiting approval. We&apos;ll email <strong className="text-ink">{user.email}</strong> the moment it&apos;s active — then you can sign in and start building your MIS pack.
+            Your workspace{name ? <> <strong className="text-ink">{name}</strong></> : null} has been created and is awaiting approval. We&apos;ll email <strong className="text-ink">{user.email}</strong> the moment it&apos;s active — then you can sign in and start building your financials.
           </p>
           <p className="mt-3 text-[12.5px] text-muted">No workspace data is accessible until approval. This usually doesn&apos;t take long.</p>
         </div>

@@ -36,7 +36,7 @@ export function ReconcilePanel({ orgId }: { orgId: string }) {
     <div className="space-y-5">
       {/* Upload */}
       <form action={formAction} className="card p-5">
-        <p className="text-sm font-semibold text-ink">Upload to reconcile</p>
+        <p className="text-sm font-semibold text-ink">Upload bank &amp; GST to check</p>
         <p className="mt-0.5 text-[12px] text-muted">Bank statement and/or GST return (CSV or XLSX). Processed in-memory — nothing is stored. Messy files are read defensively; unreadable rows are flagged, never guessed.</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-sm">
@@ -48,7 +48,7 @@ export function ReconcilePanel({ orgId }: { orgId: string }) {
             <input type="file" name="gstFile" accept=".csv,.xlsx,.xls" className="text-sm text-muted file:mr-3 file:rounded-[var(--radius-ctl)] file:border file:border-line-strong file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-body hover:file:bg-canvas" />
           </label>
         </div>
-        <button type="submit" disabled={pending} className="btn btn-primary mt-3">{pending ? 'Reconciling…' : 'Reconcile against books'}</button>
+        <button type="submit" disabled={pending} className="btn btn-primary mt-3">{pending ? 'Checking…' : 'Check against my books'}</button>
         {state.error ? <p role="alert" className="mt-2 text-sm font-medium text-amber-700">{state.error}</p> : null}
       </form>
 
@@ -67,7 +67,7 @@ export function ReconcilePanel({ orgId }: { orgId: string }) {
 
           {/* Real gaps */}
           <section className="card p-5">
-            <h2 className="text-sm font-semibold text-ink">Reconciliation gaps</h2>
+            <h2 className="text-sm font-semibold text-ink">What didn&apos;t match</h2>
             <p className="mt-0.5 text-[12px] text-muted">{o.sourceOfTruth}</p>
             {o.insights.length ? (
               <div className="mt-3 space-y-3">
