@@ -24,8 +24,8 @@ export default async function ReconcilePage({ params }: { params: Promise<{ orgI
       <header className="sticky top-0 z-20 border-b border-line bg-white/85 px-8 py-4 backdrop-blur">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="font-serif text-[22px] font-semibold leading-tight tracking-[-0.01em] text-ink">Reconcile</h1>
-            <p className="mt-0.5 text-[12.5px] text-muted">{chain.org.legalName}{latest ? ` · books: ${latest.label}` : ''} · bank &amp; GST cross-checks · <span className="font-semibold text-amber-700">OVERLAY — the gap is the insight</span></p>
+            <h1 className="font-serif text-[22px] font-semibold leading-tight tracking-[-0.01em] text-ink">Bank &amp; GST Check</h1>
+            <p className="mt-0.5 text-[12.5px] text-muted">{chain.org.legalName}{latest ? ` · books: ${latest.label}` : ''} · we compare your bank &amp; GST to your books — <span className="font-semibold text-amber-700">the gap is the insight</span></p>
           </div>
           <span className="rounded-md bg-amber-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-700 ring-1 ring-inset ring-amber-600/20">Cross-check</span>
         </div>

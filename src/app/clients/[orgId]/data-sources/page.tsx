@@ -32,8 +32,8 @@ export default async function DataSourcesPage({ params }: { params: Promise<{ or
   return (
     <div className="flex min-h-full flex-1 flex-col bg-canvas">
       <header className="sticky top-0 z-20 border-b border-line bg-white/85 px-8 py-4 backdrop-blur">
-        <h1 className="font-serif text-[22px] font-semibold leading-tight tracking-[-0.01em] text-ink">Data Sources</h1>
-        <p className="mt-0.5 text-[12.5px] text-muted">{org.legal_name} · connect your accounting data — Tally today, more sources coming</p>
+        <h1 className="font-serif text-[22px] font-semibold leading-tight tracking-[-0.01em] text-ink">Your Data</h1>
+        <p className="mt-0.5 text-[12.5px] text-muted">{org.legal_name} · where your numbers come from — Tally today, more sources coming</p>
       </header>
 
       <main className="mx-auto w-full max-w-5xl flex-1 space-y-5 px-8 py-7">

@@ -48,6 +48,36 @@ function splitDrCr(signedPaise: number): { dr: number; cr: number } {
   return signedPaise >= 0 ? { dr: signedPaise, cr: 0 } : { dr: 0, cr: -signedPaise };
 }
 
+export type TallyMeta = { companyName: string | null; fromDate: string | null; toDate: string | null };
+
+/** Best-effort extraction of the company name + report date range from a Tally export envelope, for the
+ *  onboarding auto-detect ("We found [company], [period]…"). Tally stamps these in the report header /
+ *  static variables; tags vary by export, so we try several. Dates are 'YYYYMMDD' → returned 'YYYY-MM-DD'.
+ *  Returns nulls where a field isn't present — the caller degrades (e.g. asks the month). PURE. */
+export function detectTallyMeta(xml: string): TallyMeta {
+  const first = (...names: string[]): string | null => {
+    for (const n of names) {
+      const v = tag(xml, n);
+      if (v) return decode(v);
+    }
+    return null;
+  };
+  // Company name: static-variable / report-header tags, then a <COMPANY NAME="…"> attribute.
+  const companyName =
+    first('SVCURRENTCOMPANY', 'CURRENTCOMPANY', 'COMPANYNAME', 'BSNAME', 'REPORTTITLE') ??
+    (xml.match(/<COMPANY\b[^>]*\bNAME\s*=\s*"([^"]+)"/i)?.[1] ? decode(xml.match(/<COMPANY\b[^>]*\bNAME\s*=\s*"([^"]+)"/i)![1]) : null);
+
+  const toIso = (raw: string | null): string | null => {
+    if (!raw) return null;
+    const s = raw.replace(/[^0-9]/g, '');
+    if (s.length === 8) return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`; // YYYYMMDD
+    return null;
+  };
+  const fromDate = toIso(first('SVFROMDATE', 'FROMDATE'));
+  const toDate = toIso(first('SVTODATE', 'TODATE', 'ASONDATE', 'LASTVOUCHERDATE'));
+  return { companyName, fromDate, toDate };
+}
+
 export function parseTallyTB(xml: string): TallyParse {
   const warnings: string[] = [];
 

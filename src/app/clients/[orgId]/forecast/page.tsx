@@ -113,9 +113,9 @@ export default async function ForecastPage({ params, searchParams }: { params: P
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-5 px-8 py-7">
         {chain.results.length === 0 ? (
           <div className="card p-8 text-center">
-            <p className="text-sm font-semibold text-ink">No periods yet</p>
-            <p className="mx-auto mt-1.5 max-w-md text-[13px] text-muted">Upload a trial balance to record a period, then load a second period — a forecast needs at least two periods of real history.</p>
-            <Link href={`/clients/${orgId}`} className="mt-4 inline-block text-sm font-medium text-primary hover:underline">← Add a period</Link>
+            <p className="text-sm font-semibold text-ink">No months yet</p>
+            <p className="mx-auto mt-1.5 max-w-md text-[13px] text-muted">Connect your books to add a month, then add a second — a forecast needs at least two months of real history.</p>
+            <Link href={`/clients/${orgId}`} className="mt-4 inline-block text-sm font-medium text-primary hover:underline">← Connect your books</Link>
           </div>
         ) : !f.quality.sufficient ? (
           // HONEST DEGRADATION — one period: say so, show actuals, invent nothing.

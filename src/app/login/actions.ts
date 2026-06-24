@@ -14,6 +14,14 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: error.message };
 
+  // Count this sign-in (drives the welcome guide's "every alternate login" cadence). Best-effort.
+  if (data.user?.id) {
+    try {
+      const { data: p } = await supabase.from('profiles').select('login_count').eq('id', data.user.id).single();
+      await supabase.from('profiles').update({ login_count: (p?.login_count ?? 0) + 1 }).eq('id', data.user.id);
+    } catch { /* non-critical */ }
+  }
+
   // Append-only audit trail (best-effort; never blocks login). org_id null = system/auth event.
   try {
     await supabase.from('audit_log').insert({

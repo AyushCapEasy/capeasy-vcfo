@@ -77,8 +77,8 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
 
       <main className="mx-auto w-full max-w-5xl flex-1 space-y-8 p-6">
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-white px-4 py-2.5 text-sm">
-          <span className="text-muted">Supporting schedules (AR/AP aging, headcount, recurring revenue, cash, capex, debt) — optional, each unlocks an extra dimension.</span>
-          <Link href={`/clients/${orgId}/periods/${periodId}/schedules`} className="shrink-0 font-medium text-primary hover:underline">Schedules →</Link>
+          <span className="text-muted">Optional add-ons (AR/AP aging, headcount, recurring revenue, cash, capex, debt) — each unlocks more detail.</span>
+          <Link href={`/clients/${orgId}/periods/${periodId}/schedules`} className="shrink-0 font-medium text-primary hover:underline">Add-ons →</Link>
         </div>
 
         {staging ? (
@@ -87,7 +87,7 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
         <>
         {/* 1) Upload */}
         <section>
-          <StepHead n={1} title="Upload trial balance" />
+          <StepHead n={1} title="Upload your accounts" />
           <div className="card p-5">
             <p className="mb-3 text-xs text-muted">
               Expected columns: <code className="rounded bg-hair px-1 py-0.5 text-[11px] text-body">account_code, account_name, debit, credit</code> (CSV or XLSX). Header synonyms tolerated; amounts in ₹.
@@ -100,10 +100,10 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
           <>
             {/* 2) Validation gate */}
             <section>
-              <StepHead n={2} title="Validation gate" note="§3.3" />
+              <StepHead n={2} title="Quality checks" />
               <div className={`card overflow-hidden border-l-4 ${report?.ok ? 'border-l-emerald-500' : 'border-l-red-500'}`}>
                 <p className={`px-5 py-3 text-sm font-semibold ${report?.ok ? 'bg-emerald-50/60 text-emerald-800' : 'bg-red-50/60 text-red-800'}`}>
-                  {report?.ok ? '✓ Gate passed — ready to finalise.' : '✗ Gate blocked — resolve the failures below before compute.'}
+                  {report?.ok ? '✓ Checks passed — ready to finish.' : '✗ Checks failed — fix the issues below first.'}
                 </p>
                 <ul className="divide-y divide-line">
                   {report?.rules.map((r) => (
@@ -128,7 +128,7 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
 
             {/* 3) Mapping */}
             <section>
-              <StepHead n={3} title="Map accounts" note={`${mappedCount}/${accounts.length} mapped — saved mappings auto-apply next period`} />
+              <StepHead n={3} title="Match your accounts" note={`${mappedCount}/${accounts.length} matched — saved matches auto-apply next month`} />
               <div className="card overflow-hidden">
                 <table className="w-full text-sm">
                   <thead className="border-b border-line bg-canvas text-left">
@@ -136,7 +136,7 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
                       <th className="px-4 py-2.5">Source account</th>
                       <th className="px-4 py-2.5 text-right">Debit</th>
                       <th className="px-4 py-2.5 text-right">Credit</th>
-                      <th className="px-4 py-2.5">Canonical category</th>
+                      <th className="px-4 py-2.5">Category</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line">
@@ -187,7 +187,7 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
 
             {/* 4) Finalise */}
             <section>
-              <StepHead n={4} title="Finalise" />
+              <StepHead n={4} title="Finish" />
               <div className="card p-5">
                 {report?.ok ? (
                   <div className="flex items-center gap-3">
@@ -197,17 +197,17 @@ export default async function PeriodIntakePage({ params }: { params: Promise<{ o
                     </form>
                     <form action={finalizePeriod.bind(null, orgId, periodId)}>
                       <input type="hidden" name="status" value="locked" />
-                      <button className="btn border border-emerald-300 bg-white text-emerald-700 shadow-sm hover:bg-emerald-50">Lock period</button>
+                      <button className="btn border border-emerald-300 bg-white text-emerald-700 shadow-sm hover:bg-emerald-50">Lock month</button>
                     </form>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted">The validation gate must pass before this period can be marked reviewed or locked.</p>
+                  <p className="text-sm text-muted">All checks must pass before you can mark this month reviewed or locked.</p>
                 )}
               </div>
             </section>
           </>
         ) : (
-          <div className="card p-6 text-center text-sm text-muted">Upload a trial balance to begin mapping and validation.</div>
+          <div className="card p-6 text-center text-sm text-muted">Upload your accounts to get started.</div>
         )}
         </>
         )}

@@ -23,7 +23,7 @@ export default async function LoginPage() {
           </div>
           <p className="eyebrow tracking-[0.2em]">CapEasy</p>
           <h1 className="mt-1.5 text-2xl font-bold text-ink">vCFO</h1>
-          <p className="mt-1 text-sm text-muted">Sign in to the MIS workspace</p>
+          <p className="mt-1 text-sm text-muted">Sign in to your workspace</p>
         </div>
         <div className="card p-6 shadow-md">
           <LoginForm />

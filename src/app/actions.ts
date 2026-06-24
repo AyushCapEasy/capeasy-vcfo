@@ -3,6 +3,14 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
+/** Welcome guide "don't show again" — sets the user's own profile flag (profiles_update_self RLS). */
+export async function dismissWelcome(): Promise<void> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from('profiles').update({ welcome_dismissed: true }).eq('id', user.id);
+}
+
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   const {
