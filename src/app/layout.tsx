@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans, Source_Serif_4 } from "next/font/google";
+import { Sora, Public_Sans } from "next/font/google";
 import "./globals.css";
 
-// Redesign typography (m-redesign): IBM Plex Sans for the UI, Source Serif 4 for figures/headings.
-const plexSans = IBM_Plex_Sans({ variable: "--font-plex-sans", weight: ["400", "500", "600", "700"], subsets: ["latin"], display: "swap" });
-const sourceSerif = Source_Serif_4({ variable: "--font-source-serif", weight: ["400", "500", "600", "700"], subsets: ["latin"], display: "swap" });
+// Redesign V2 typography (m-redesign-v2 — "Meridian" handoff): Sora for headings/display,
+// Public Sans for body + financial figures (tabular numerals).
+const sora = Sora({ variable: "--font-sora", weight: ["400", "500", "600", "700", "800"], subsets: ["latin"], display: "swap" });
+const publicSans = Public_Sans({ variable: "--font-public-sans", weight: ["400", "500", "600", "700"], subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
   title: "CapEasy vCFO",
@@ -17,9 +18,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${plexSans.variable} ${sourceSerif.variable} h-full antialiased`}>
-      {/* Warm-neutral canvas + ink come from the design tokens (globals.css). */}
-      <body className="font-sans min-h-full flex flex-col bg-canvas text-ink">{children}</body>
+    <html lang="en" className={`${sora.variable} ${publicSans.variable} h-full antialiased`}>
+      {/* Navy+emerald canvas: slate body text on the cool --color-canvas; headings/figures are navy. */}
+      <body className="font-sans min-h-full flex flex-col bg-canvas text-body">{children}</body>
     </html>
   );
 }

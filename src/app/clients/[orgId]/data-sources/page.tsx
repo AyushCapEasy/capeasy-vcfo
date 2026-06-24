@@ -116,7 +116,7 @@ export default async function DataSourcesPage({ params }: { params: Promise<{ or
         <div className="card p-5">
           <p className="text-sm font-semibold text-ink">How the sources combine</p>
           <p className="mt-1.5 text-[13px] leading-relaxed text-body">
-            <strong className="text-ink">Tally is the accrual source of truth</strong> — the full chart of accounts with closing balances, the only source that gives a complete P&amp;L and balance sheet. The own-firm Zoho pull and, later, bank + GST are <strong className="text-ink">reconciliation overlays</strong>: they check against Tally&apos;s numbers, never replace them. Real client data is read <strong className="text-ink">in-memory only and never persisted here</strong> (D-014); the SAMPLE watermark stays on every screen and export until the one-time CA sign-off.
+            <strong className="text-ink">Tally is the accrual source of truth</strong> — the full chart of accounts with closing balances, the only source that gives a complete P&amp;L and balance sheet. The own-firm Zoho pull and, later, bank + GST are <strong className="text-ink">reconciliation overlays</strong>: they check against Tally&apos;s numbers, never replace them. Real client data is read <strong className="text-ink">in-memory only and never persisted here</strong> (D-014).
           </p>
         </div>
 

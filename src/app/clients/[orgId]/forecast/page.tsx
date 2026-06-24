@@ -16,12 +16,17 @@ function EstBadge() {
   return <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-amber-700 ring-1 ring-inset ring-amber-600/20">Forecast · est.</span>;
 }
 
-// Bar series: solid = actual, dashed/translucent = forecast, with a divider at the boundary.
-function MiniBars({ history, projection }: { history: SeriesPoint[]; projection: SeriesPoint[] }) {
+// Bar series: solid = actual, dashed/translucent = forecast, with a divider at the boundary. On the dark
+// runway hero, `tone="dark"` switches to mint so the bars read on navy; otherwise navy on light surfaces.
+function MiniBars({ history, projection, tone = 'light' }: { history: SeriesPoint[]; projection: SeriesPoint[]; tone?: 'light' | 'dark' }) {
   const all = [...history, ...projection];
   const max = Math.max(...all.map((p) => Math.abs(p.paise)), 1);
   const slot = 26, bw = 16, h = 72, pad = 8;
   const W = Math.max(all.length * slot, slot);
+  const actualFill = tone === 'dark' ? '#6EE7B7' : '#0b1f4d';
+  const projFill = tone === 'dark' ? 'rgba(110,231,183,0.22)' : 'rgba(11,31,77,0.18)';
+  const projStroke = tone === 'dark' ? '#6EE7B7' : '#0b1f4d';
+  const divider = tone === 'dark' ? 'rgba(255,255,255,0.28)' : '#d8e0ec';
   return (
     <svg viewBox={`0 0 ${W} ${h}`} preserveAspectRatio="none" className="h-20 w-full" role="img" aria-label="actual then forecast">
       {all.map((p, i) => {
@@ -29,12 +34,12 @@ function MiniBars({ history, projection }: { history: SeriesPoint[]; projection:
         const x = i * slot + (slot - bw) / 2;
         return (
           <rect key={i} x={x} y={h - pad - bh} width={bw} height={bh} rx={2}
-            fill={p.actual ? '#1e4fa8' : 'rgba(30,79,168,0.18)'}
-            stroke={p.actual ? 'none' : '#1e4fa8'} strokeWidth={p.actual ? 0 : 1} strokeDasharray={p.actual ? undefined : '3 2'} />
+            fill={p.actual ? actualFill : projFill}
+            stroke={p.actual ? 'none' : projStroke} strokeWidth={p.actual ? 0 : 1} strokeDasharray={p.actual ? undefined : '3 2'} />
         );
       })}
       {history.length > 0 && projection.length > 0 ? (
-        <line x1={history.length * slot} y1={2} x2={history.length * slot} y2={h - 2} stroke="#d7d7d0" strokeWidth={1} strokeDasharray="2 2" />
+        <line x1={history.length * slot} y1={2} x2={history.length * slot} y2={h - 2} stroke={divider} strokeWidth={1} strokeDasharray="2 2" />
       ) : null}
     </svg>
   );
@@ -53,7 +58,7 @@ function ProjectionTable({ f }: { f: MetricForecast }) {
         {f.projection.map((p) => (
           <tr key={p.periodMonth} className="bg-canvas/40">
             <td className="py-1.5 text-muted">{p.label} <span className="text-[10px] font-medium italic text-amber-700">est.</span></td>
-            <td className="num py-1.5 italic text-body" style={{ textDecoration: 'underline dashed', textUnderlineOffset: '3px', textDecorationColor: '#aeb4bc' }}>~{inr(p.paise)}</td>
+            <td className="num py-1.5 italic text-body" style={{ textDecoration: 'underline dashed', textUnderlineOffset: '3px', textDecorationColor: '#94a3b8' }}>~{inr(p.paise)}</td>
           </tr>
         ))}
       </tbody>
@@ -101,7 +106,7 @@ export default async function ForecastPage({ params, searchParams }: { params: P
             <h1 className="font-serif text-[22px] font-semibold leading-tight tracking-[-0.01em] text-ink">Forecast</h1>
             <p className="mt-0.5 text-[12.5px] text-muted">{chain.org.legalName} · projected from {f.quality.periods} period{f.quality.periods === 1 ? '' : 's'} of real history · <span className="font-semibold text-amber-700">FORECAST — not actual</span></p>
           </div>
-          <span className="rounded-md bg-amber-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-700 ring-1 ring-inset ring-amber-600/20">Estimate · unverified</span>
+          <span className="rounded-md bg-amber-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-700 ring-1 ring-inset ring-amber-600/20">Estimate</span>
         </div>
       </header>
 
@@ -165,29 +170,34 @@ export default async function ForecastPage({ params, searchParams }: { params: P
 
             {/* Runway — THE number for a pre-profit startup */}
             {runway ? (
-              <section className="card p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-sm font-semibold text-ink">Cash runway</h2><EstBadge />
+              // Runway is THE number for a pre-profit startup — given the Meridian gradient-hero treatment.
+              <section className="relative overflow-hidden rounded-[var(--radius-card)] p-5 text-white shadow-[0_12px_30px_rgba(11,31,77,0.22)]" style={{ background: 'linear-gradient(135deg,#047857 0%,#065F46 55%,#0B1F4D 100%)' }}>
+                <div aria-hidden className="pointer-events-none absolute -right-12 -top-12 h-56 w-56" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.30), transparent 70%)' }} />
+                <div className="relative">
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-mint">Cash runway</h2>
+                    <span className="rounded bg-white/15 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-white ring-1 ring-inset ring-white/25">Forecast · est.</span>
+                  </div>
+                  <div className="mt-3 grid gap-4 sm:grid-cols-3">
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-white/60">Runway at current burn</p>
+                      <p className="mt-1 text-3xl font-bold tracking-tight text-white">{runway.burning ? `${runway.runwayMonths!.toFixed(1)} mo` : '—'}</p>
+                      <p className="mt-1 text-[11.5px] text-white/70">{runway.burning ? `cash reaches zero ≈ ${runway.zeroMonthLabel}` : 'not burning at the current trend'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-white/60">Cash on hand</p>
+                      <p className="num mt-1 text-lg font-semibold text-white">{inr(runway.currentCashPaise)}</p>
+                      <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-white/60">Monthly burn (observed)</p>
+                      <p className="num mt-1 text-lg font-semibold text-white">{runway.monthlyBurnPaise !== null && runway.monthlyBurnPaise > 0 ? inr(runway.monthlyBurnPaise) : '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-white/60">Projected cash ({SCENARIO_LABEL[scenario].toLowerCase()})</p>
+                      <div className="mt-1"><MiniBars tone="dark" history={[{ label: 'now', periodMonth: '', paise: runway.currentCashPaise, actual: true }]} projection={runway.trajectory.map((t) => ({ ...t, paise: Math.max(0, t.paise) }))} /></div>
+                      {runway.reachesProfitability ? <p className="mt-1 text-[11.5px] text-mint">scenario turns cash-flow positive within the horizon</p> : null}
+                    </div>
+                  </div>
+                  <p className="mt-3 border-t border-white/15 pt-2.5 text-[11.5px] text-white/70">{runway.basis}</p>
                 </div>
-                <div className="mt-3 grid gap-4 sm:grid-cols-3">
-                  <div>
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted">Runway at current burn</p>
-                    <p className="mt-1 text-3xl font-bold tracking-tight text-ink">{runway.burning ? `${runway.runwayMonths!.toFixed(1)} mo` : '—'}</p>
-                    <p className="mt-1 text-[11.5px] text-muted">{runway.burning ? `cash reaches zero ≈ ${runway.zeroMonthLabel}` : 'not burning at the current trend'}</p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted">Cash on hand</p>
-                    <p className="num mt-1 text-lg font-semibold text-ink">{inr(runway.currentCashPaise)}</p>
-                    <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-muted">Monthly burn (observed)</p>
-                    <p className="num mt-1 text-lg font-semibold text-ink">{runway.monthlyBurnPaise !== null && runway.monthlyBurnPaise > 0 ? inr(runway.monthlyBurnPaise) : '—'}</p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted">Projected cash ({SCENARIO_LABEL[scenario].toLowerCase()})</p>
-                    <div className="mt-1"><MiniBars history={[{ label: 'now', periodMonth: '', paise: runway.currentCashPaise, actual: true }]} projection={runway.trajectory.map((t) => ({ ...t, paise: Math.max(0, t.paise) }))} /></div>
-                    {runway.reachesProfitability ? <p className="mt-1 text-[11.5px] text-positive">scenario turns cash-flow positive within the horizon</p> : null}
-                  </div>
-                </div>
-                <p className="mt-3 border-t border-line pt-2.5 text-[11.5px] text-muted">{runway.basis}</p>
               </section>
             ) : null}
 
@@ -219,7 +229,7 @@ export default async function ForecastPage({ params, searchParams }: { params: P
               </Card>
             ) : null}
 
-            <p className="pb-2 text-center text-[11.5px] text-muted">Projections are estimates built on historical trend, not actuals — they will differ from real results, carry no assurance, and stay SAMPLE/unverified until CA sign-off. Round figures reflect deliberate low precision.</p>
+            <p className="pb-2 text-center text-[11.5px] text-muted">Projections are estimates built on historical trend, not actuals — they will differ from real results and carry no assurance. Round figures reflect deliberate low precision.</p>
           </>
         )}
       </main>

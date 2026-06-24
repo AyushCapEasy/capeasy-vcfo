@@ -14,6 +14,9 @@ export type RenderedTemplate = { subject: string; html: string; text: string };
 
 const BRAND = 'Saral by CapEasy';
 
+// Minimal HTML-escape for values interpolated into the email body (e.g. a user-supplied workspace name).
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+
 function shell(headline: string, bodyHtml: string, cta: { url: string; label: string }): string {
   return `<!doctype html><html><body style="margin:0;background:#f6f5f2;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1f2421">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f5f2;padding:32px 0">
@@ -61,5 +64,18 @@ export function renderAuthEmail(kind: AuthTemplateKind, actionUrl: string): Rend
       { url: actionUrl, label: 'Reset password' }
     ),
     text: `Reset your ${BRAND} password\n\nWe received a request to reset your ${BRAND} password. Use this link to choose a new one (it expires shortly):\n${actionUrl}\n\nIf you didn't request this, you can safely ignore this email.`,
+  };
+}
+
+/** Workspace-approval email — sent when an admin flips a pending org to active. `loginUrl` opens the app. */
+export function renderApprovalEmail(workspaceName: string, loginUrl: string): RenderedTemplate {
+  return {
+    subject: `Your workspace is approved · ${BRAND}`,
+    html: shell(
+      'Your workspace is approved',
+      `<p style="margin:0;font-size:14px;line-height:1.6;color:#3a3f3a">Good news — your ${BRAND} workspace <strong>${esc(workspaceName)}</strong> has been approved and is now active. Sign in to start turning your books into a structured MIS pack.</p>`,
+      { url: loginUrl, label: 'Open your workspace' }
+    ),
+    text: `Your workspace is approved — ${BRAND}\n\nYour workspace "${workspaceName}" has been approved and is now active. Sign in to get started:\n${loginUrl}`,
   };
 }

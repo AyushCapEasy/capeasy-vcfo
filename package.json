@@ -18,6 +18,7 @@
     "db:migrate:status": "node scripts/db-migrate.mjs --status",
     "db:seed": "node scripts/seed.mjs",
     "db:seed-user": "node scripts/seed-user.mjs",
+    "org:approve": "tsx scripts/approve-org.mts",
     "db:check": "node scripts/db-check.mjs",
     "db:types": "node scripts/gen-types.mjs > src/lib/database.types.ts",
     "tally:recon": "tsx scripts/tally-recon.mts",

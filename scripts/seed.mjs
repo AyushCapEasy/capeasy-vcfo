@@ -145,8 +145,8 @@ async function main() {
     );
 
     const org = (await client.query(
-      `insert into public.orgs (legal_name, entity_type, state, gst_scheme, has_employees)
-       values ($1,'pvt_ltd','Maharashtra','monthly',true) returning id`,
+      `insert into public.orgs (legal_name, entity_type, state, gst_scheme, has_employees, status)
+       values ($1,'pvt_ltd','Maharashtra','monthly',true,'active') returning id`,
       ['Acme Foods Pvt Ltd']
     )).rows[0].id;
 

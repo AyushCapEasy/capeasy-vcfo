@@ -18,7 +18,7 @@ export function Sparkline({ values, width = 140, height = 40 }: { values: number
             width={slot * 0.56}
             height={h}
             rx={2}
-            fill={v < 0 ? '#b91c1c' : '#1e4fa8'}
+            fill={v < 0 ? '#dc2626' : '#047857'}
             opacity={i === values.length - 1 ? 1 : 0.45}
           />
         );

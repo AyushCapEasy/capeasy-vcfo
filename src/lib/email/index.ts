@@ -9,14 +9,14 @@ import type { EmailProvider, SendResult, EmailMessage } from './types';
 import { readEmailConfig, type EmailConfig } from './config';
 import { ResendProvider } from './resend';
 import { MockProvider } from './mock';
-import { renderAuthEmail, type AuthTemplateKind } from './templates';
+import { renderAuthEmail, renderApprovalEmail, type AuthTemplateKind } from './templates';
 
 export type { EmailProvider, SendResult, EmailMessage, EmailAddress } from './types';
 export type { EmailConfig, EmailProviderKind } from './config';
 export type { AuthTemplateKind, RenderedTemplate } from './templates';
 export { MockProvider } from './mock';
 export { ResendProvider } from './resend';
-export { renderAuthEmail } from './templates';
+export { renderAuthEmail, renderApprovalEmail } from './templates';
 export { readEmailConfig, formatSender, SARAL_SENDER_NAME } from './config';
 
 /** Build the configured provider. EMAIL_PROVIDER=resend → ResendProvider (requires RESEND_API_TOKEN);
@@ -57,4 +57,20 @@ export function sendVerificationEmail(to: string, confirmationUrl: string, deps:
 /** Saral-branded password-reset send. `resetUrl` is the auth recovery link. */
 export function sendPasswordResetEmail(to: string, resetUrl: string, deps: SendDeps = {}): Promise<SendResult> {
   return sendAuthEmail('password_reset', to, resetUrl, deps);
+}
+
+/** Workspace-approval send — emails the org owner when an admin flips their org from pending to active. */
+export function sendApprovalEmail(to: string, workspaceName: string, loginUrl: string, deps: SendDeps = {}): Promise<SendResult> {
+  const config = deps.config ?? readEmailConfig();
+  const provider = deps.provider ?? getEmailProvider(config);
+  const tpl = renderApprovalEmail(workspaceName, loginUrl);
+  const message: EmailMessage = {
+    to,
+    from: config.fromFormatted,
+    subject: tpl.subject,
+    html: tpl.html,
+    text: tpl.text,
+    tags: { product: 'saral', template: 'approval' },
+  };
+  return provider.send(message);
 }

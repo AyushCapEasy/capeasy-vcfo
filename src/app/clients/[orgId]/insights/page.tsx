@@ -11,10 +11,6 @@ import { computeObservations, GROUP_CODES, type Observation } from '@/lib/insigh
 import { computeDiagnoses, type Diagnosis } from '@/lib/insight/diagnoses';
 import { computeRecommendations, computeGoalTracking, type Recommendation, type GoalTrack } from '@/lib/insight/recommendations';
 
-const Unverified = () => (
-  <span className="rounded bg-amber-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-amber-700 uppercase ring-1 ring-inset ring-amber-600/20">Unverified — pending CA</span>
-);
-
 function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
     <section className="card overflow-hidden">
@@ -23,7 +19,6 @@ function Section({ title, subtitle, children }: { title: string; subtitle?: stri
           <h2 className="panel-title">{title}</h2>
           {subtitle ? <p className="panel-sub">{subtitle}</p> : null}
         </div>
-        <div className="shrink-0"><Unverified /></div>
       </div>
       {children}
     </section>
@@ -46,13 +41,11 @@ function ObservationsBlock({ observations, drilldown }: { observations: Observat
             <summary className="flex cursor-pointer list-none items-start gap-2.5 px-5 py-3 text-sm hover:bg-canvas">
               <svg className="mt-1 h-3 w-3 shrink-0 text-muted transition-transform group-open:rotate-90" viewBox="0 0 12 12"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
               <span className="flex-1 leading-relaxed text-body">{o.statement}</span>
-              <span className="badge badge-neutral mt-0.5 shrink-0">{o.status}</span>
             </summary>
             <div className="space-y-1 bg-canvas/60 px-5 pb-3 pl-10 text-xs text-muted">
               <p>
                 Traces to engine field{enginePaths.length > 1 ? 's' : ''}:{' '}
                 {enginePaths.map((p) => <code key={p} className="mr-1 rounded bg-white px-1 py-0.5 text-[11px] text-body">{p}</code>)}
-                <span className="text-muted"> · unverified</span>
               </p>
               {accounts.length ? (
                 <table className="w-full"><tbody>
@@ -83,7 +76,6 @@ function DiagnosesBlock({ diagnoses }: { diagnoses: Diagnosis[] }) {
           <summary className="flex cursor-pointer list-none items-start gap-2.5 px-5 py-3 text-sm hover:bg-canvas">
             <svg className="mt-1 h-3 w-3 shrink-0 text-muted transition-transform group-open:rotate-90" viewBox="0 0 12 12"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
             <span className="flex-1 leading-relaxed text-body"><span className="font-semibold text-ink">{d.metric}</span> — {d.cause}</span>
-            <span className="badge badge-neutral mt-0.5 shrink-0">{d.status}</span>
           </summary>
           <div className="bg-canvas/60 px-5 pb-3 pl-10 text-xs text-muted">
             <p className="mb-1 text-[11px] text-muted">rule {d.ruleId} · {d.decomposition}{d.decomposition === 'single_factor' ? ' (ceteris-paribus, not additive)' : ''}</p>
@@ -109,11 +101,10 @@ function RecommendationsBlock({ recs }: { recs: Recommendation[] }) {
       {recs.map((r, i) => (
         <li key={i} className="px-5 py-3.5 text-sm">
           <div className="flex items-start gap-2.5">
-            <span className="mt-1.5 h-3.5 w-0.5 shrink-0 rounded-full bg-accent" aria-hidden />
+            <span className="mt-1.5 h-3.5 w-0.5 shrink-0 rounded-full bg-primary" aria-hidden />
             <div className="flex-1">
               <div className="flex items-start gap-2">
                 <span className="flex-1 font-medium text-ink"><span className="mr-1 text-[11px] font-bold uppercase tracking-wide text-primary">Do</span>{r.action}</span>
-                <span className="badge badge-neutral mt-0.5 shrink-0">{r.status}</span>
               </div>
               <p className="mt-1 text-xs text-muted"><span className="font-medium text-body">Impact:</span> {r.quantifiedImpact.basis}</p>
               <p className="mt-0.5 text-[11px] text-muted">rule {r.ruleId} · confidence {r.confidence} · traces {r.quantifiedImpact.traces.join(', ')}</p>
@@ -204,10 +195,10 @@ export default async function InsightsPage({ params, searchParams }: { params: P
         <Section title="Observations" subtitle="Tier 1 · deterministic period-over-period changes that cleared the notability thresholds — no interpretation">
           <ObservationsBlock observations={observations} drilldown={drilldown} />
         </Section>
-        <Section title="Diagnoses" subtitle="Tier 2 · rule-based 'why' — each move decomposed into engine-field drivers (interpretation; CA must validate the rules)">
+        <Section title="Diagnoses" subtitle="Tier 2 · rule-based 'why' — each move decomposed into engine-field drivers (interpretation)">
           <DiagnosesBlock diagnoses={diagnoses} />
         </Section>
-        <Section title="Recommendations" subtitle="Tier 3 · actions with quantified impact from engine figures (advice; CA must validate the rules)">
+        <Section title="Recommendations" subtitle="Tier 3 · actions with quantified impact from engine figures (advice)">
           <RecommendationsBlock recs={recommendations} />
         </Section>
         <Section title="Goal tracking" subtitle="Tier 3 · trajectory vs target — PLACEHOLDER targets (D-013)">
@@ -216,7 +207,7 @@ export default async function InsightsPage({ params, searchParams }: { params: P
 
         <p className="pb-2 text-center text-xs text-muted">
           <Link href={`/clients/${orgId}/mis?p=${periodMeta.id}`} className="font-medium text-primary hover:underline">← Back to the MIS pack</Link>
-          {' · '}insight layer + accounting conventions pending one-time CA rule-review — <span className="font-semibold">NOT VERIFIED</span>.
+          {' · '}engine + insight rules CA-reviewed.
         </p>
       </main>
     </div>
