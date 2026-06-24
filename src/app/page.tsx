@@ -5,6 +5,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { isSuperadmin } from '@/lib/admin/rpc';
 import { signOut } from './actions';
 import { CreateWorkspaceForm } from './onboarding/create-workspace-form';
 
@@ -14,6 +15,10 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect('/login'); // proxy already gates; defensive for direct render
+
+  // A superadmin is an operator, not a tenant — send them straight to the approval console (and never
+  // show them the tenant "create your workspace" form). Normal users fall through to their workspaces.
+  if (await isSuperadmin(supabase)) redirect('/admin');
 
   const { data: profile } = await supabase
     .from('profiles')
